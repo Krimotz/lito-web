@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiTo — Listen Together</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    max-width: 460px;
+    margin: 3rem auto;
+    padding: 0 1.25rem;
+    line-height: 1.5;
+  }
+  h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+  p.sub { margin: 0 0 1.5rem; color: #666; font-size: 0.95rem; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; }
+  input {
+    font-size: 1rem;
+    padding: 0.6rem;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    background: transparent;
+    color: inherit;
+  }
+  .row { display: flex; gap: 0.5rem; }
+  button {
+    font-size: 1rem;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #f5f5f5;
+    color: #222;
+    cursor: pointer;
+    flex: 1;
+  }
+  button:hover:not(:disabled) { background: #ebebeb; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #status { margin-top: 1.25rem; font-size: 0.9rem; color: #555; }
+  #meter {
+    margin-top: 1rem;
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  #meterFill {
+    height: 100%;
+    width: 0;
+    background: #4caf50;
+    transition: width 80ms linear;
+  }
+  .error { color: #c33; }
+</style>
+</head>
+<body>
+
+<h1>LiTo</h1>
+<p class="sub">Enter the room ID shown on the broadcaster's phone.</p>
+
+<label for="room">Room ID</label>
+<input id="room" placeholder="lito-xxxx" autocomplete="off" autocapitalize="off" spellcheck="false" />
+
+<div class="row">
+  <button id="connectBtn">Connect</button>
+  <button id="disconnectBtn" disabled>Disconnect</button>
+</div>
+
+<div id="status">Idle</div>
+<div id="meter"><div id="meterFill"></div></div>
+
+<script>
+// ⚠️ Update this to your actual Render URL
+const SERVER_BASE = 'wss://lito-server.onrender.com';
+
+// PCM format — must match AudioCaptureManager.kt on the Android side
+const SAMPLE_RATE = 44100;
+const CHANNELS = 2;
+
+const statusEl = document.getElementById('status');
+const meterFill = document.getElementById('meterFill');
+const roomInput = document.getElementById('room');
+const connectBtn = document.getElementById('connectBtn');
+const disconnectBtn = document.getElementById('disconnectBtn');
+
+// Pre-fill from ?room=... query string
+const params = new URLSearchParams(location.search);
+const presetRoom = params.get('room');
+if (presetRoom) roomInput.value = presetRoom;
+
+let ws = null;
+let audioCtx = null;
+let nextPlayTime = 0;
+let analyser = null;
+let analyserData = null;
+let meterRaf = null;
+
+function setStatus(text, isError = false) {
+  statusEl.textContent = text;
+  statusEl.className = isError ? 'error' : '';
+}
+
+connectBtn.onclick = () => {
+  const room = roomInput.value.trim();
+  if (!room) {
+    setStatus('Enter a room ID first', true);
+    return;
+  }
+
+  setStatus('Connecting…');
+  connectBtn.disabled = true;
+  disconnectBtn.disabled = false;
+
+  // AudioContext must be created after a user gesture (this click)
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Set up analyser for the level meter
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 512;
+  analyserData = new Uint8Array(analyser.fftSize);
+  analyser.connect(audioCtx.destination);
+
+  nextPlayTime = audioCtx.currentTime + 0.1;
+
+  ws = new WebSocket(`${SERVER_BASE}/listen/${room}`);
+  ws.binaryType = 'arraybuffer';
+
+  ws.onopen = () => {
+    setStatus(`Connected to ${room}`);
+    startMeter();
+  };
+
+  ws.onmessage = (event) => {
+    if (!(event.data instanceof ArrayBuffer)) return;
+    playPcm(event.data);
+  };
+
+  ws.onerror = () => {
+    setStatus('Connection error', true);
+  };
+
+  ws.onclose = () => {
+    setStatus('Disconnected');
+    stopPlayback();
+    connectBtn.disabled = false;
+    disconnectBtn.disabled = true;
+  };
+};
+
+disconnectBtn.onclick = () => {
+  ws?.close();
+};
+
+function stopPlayback() {
+  stopMeter();
+  try { audioCtx?.close(); } catch (_) {}
+  audioCtx = null;
+  analyser = null;
+  analyserData = null;
+  nextPlayTime = 0;
+  meterFill.style.width = '0%';
+}
+
+function playPcm(arrayBuffer) {
+  if (!audioCtx || !analyser) return;
+
+  const int16 = new Int16Array(arrayBuffer);
+  const frames = Math.floor(int16.length / CHANNELS);
+  if (frames === 0) return;
+
+  const buffer = audioCtx.createBuffer(CHANNELS, frames, SAMPLE_RATE);
+  for (let ch = 0; ch < CHANNELS; ch++) {
+    const channelData = buffer.getChannelData(ch);
+    for (let i = 0; i < frames; i++) {
+      channelData[i] = int16[i * CHANNELS + ch] / 32768;
+    }
+  }
+
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(analyser);
+
+  const now = audioCtx.currentTime;
+  // If we're behind (e.g. after a stall), resync rather than blast everything
+  if (nextPlayTime < now + 0.05) {
+    nextPlayTime = now + 0.05;
+  }
+  source.start(nextPlayTime);
+  nextPlayTime += buffer.duration;
+}
+
+function startMeter() {
+  const loop = () => {
+    if (!analyser || !analyserData) return;
+    analyser.getByteTimeDomainData(analyserData);
+    let sum = 0;
+    for (let i = 0; i < analyserData.length; i++) {
+      const v = (analyserData[i] - 128) / 128;
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / analyserData.length);
+    const pct = Math.min(100, Math.round(rms * 300)); // scale for visibility
+    meterFill.style.width = pct + '%';
+    meterRaf = requestAnimationFrame(loop);
+  };
+  loop();
+}
+
+function stopMeter() {
+  if (meterRaf) cancelAnimationFrame(meterRaf);
+  meterRaf = null;
+}
+</script>
+
+</body>
+</html>
