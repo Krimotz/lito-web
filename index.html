@@ -129,22 +129,52 @@ connectBtn.onclick = () => {
   ws = new WebSocket(`${SERVER_BASE}/listen/${room}`);
   ws.binaryType = 'arraybuffer';
 
+  let confirmed = false;
+
   ws.onopen = () => {
-    setStatus(`Connected to ${room}`);
-    startMeter();
+    setStatus('Handshaking…');
   };
 
   ws.onmessage = (event) => {
-    if (!(event.data instanceof ArrayBuffer)) return;
-    playPcm(event.data);
+    // Server's first message is JSON; audio is always binary
+    if (typeof event.data === 'string') {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'joined') {
+          confirmed = true;
+          setStatus(`Connected to ${room} — waiting for audio`);
+          startMeter();
+        } else if (msg.type === 'error') {
+          setStatus(msg.message, true);
+          ws.close();
+        }
+      } catch (_) {
+        // ignore malformed text frames
+      }
+      return;
+    }
+
+    if (event.data instanceof ArrayBuffer) {
+      if (!confirmed) {
+        // First audio chunk also counts as confirmation
+        confirmed = true;
+        setStatus(`Connected to ${room}`);
+        startMeter();
+      }
+      playPcm(event.data);
+    }
   };
 
   ws.onerror = () => {
     setStatus('Connection error', true);
   };
 
-  ws.onclose = () => {
-    setStatus('Disconnected');
+  ws.onclose = (event) => {
+    if (!confirmed) {
+      setStatus(`Could not connect: ${event.reason || 'unknown reason'}`, true);
+    } else {
+      setStatus('Disconnected');
+    }
     stopPlayback();
     connectBtn.disabled = false;
     disconnectBtn.disabled = true;
