@@ -250,7 +250,6 @@ const CHANNELS = 2;
 const ROOM_PREFIX = 'lito';
 
 // Auto-connect delay (ms) when the page loads with ?room=... in the URL.
-// Increase for a slower, more deliberate feel; decrease to jump straight in.
 const AUTOCONNECT_DELAY_MS = 800;
 
 // Progressive cold-start messages: [elapsedMs, message]
@@ -402,7 +401,7 @@ function connect() {
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 1024;
-  analyser.smoothingTimeConstant = 0.0;  // default is 0.8; lower = more reactive
+  analyser.smoothingTimeConstant = 0.2;
   analyserData = new Uint8Array(analyser.fftSize);
   analyser.connect(audioCtx.destination);
 
@@ -536,47 +535,45 @@ function playPcm(arrayBuffer) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Live RMS meter (vertical bars, center-out)
+// Live frequency meter — single stroked line
 // ═══════════════════════════════════════════════════════════════════
 
-const METER_BARS = 48;
+const METER_POINTS = 64;       // number of sample points along the line
+const METER_LINE_WIDTH = 2;    // pixels
 
 function startMeter() {
   if (meterRaf) return;
 
   const freqData = new Uint8Array(analyser.frequencyBinCount);
 
-  const minFreq = 600;
-  const maxFreq = 16000;
+  // Frequency range: shifted upward to emphasize mids and highs
+  const minFreq = 200;
+  const maxFreq = 12000;
   const nyquist = audioCtx.sampleRate / 2;
   const binCount = analyser.frequencyBinCount;
 
-  const barBins = [];
-  for (let i = 0; i < METER_BARS; i++) {
-    const loFrac = i / METER_BARS;
-    const hiFrac = (i + 1) / METER_BARS;
-
-    const loHz = minFreq * Math.pow(maxFreq / minFreq, loFrac);
+  // Precompute logarithmic sample positions
+  const sampleBins = [];
+  for (let i = 0; i < METER_POINTS; i++) {
+    const frac = i / (METER_POINTS - 1);
+    const loHz = minFreq * Math.pow(maxFreq / minFreq, frac);
+    const hiFrac = (i + 1) / (METER_POINTS - 1);
     const hiHz = minFreq * Math.pow(maxFreq / minFreq, hiFrac);
 
     const loBin = Math.max(0, Math.floor(loHz / nyquist * binCount));
     const hiBin = Math.min(binCount - 1, Math.floor(hiHz / nyquist * binCount));
 
-    // Gentle tilt: 0.25 means high frequencies get boosted by at most
-    // around 4x (at 16kHz), rather than 20x with the previous 0.5.
     const centerHz = Math.sqrt(loHz * hiHz);
     const tilt = Math.pow(centerHz / minFreq, 0.25);
 
-    barBins.push([loBin, Math.max(hiBin, loBin + 1), tilt]);
+    sampleBins.push([loBin, Math.max(hiBin, loBin + 1), tilt]);
   }
 
-  const displayValues = new Float32Array(METER_BARS);
+  const displayValues = new Float32Array(METER_POINTS);
 
-  const ATTACK = 0.9;
-  const RELEASE = 0.1;
-
-  // Overall sensitivity. Lower to make bars shorter across the board.
-  const GAIN = 0.7;
+  const ATTACK = 0.85;
+  const RELEASE = 0.25;
+  const GAIN = 0.8;
 
   const draw = () => {
     if (!analyser) return;
@@ -585,15 +582,20 @@ function startMeter() {
 
     const w = meterCanvas.width;
     const h = meterCanvas.height;
-    const barWidth = w / METER_BARS;
     const centerY = h / 2;
 
     meterCtx.clearRect(0, 0, w, h);
-    meterCtx.fillStyle = getComputedStyle(document.documentElement)
-      .getPropertyValue('--accent').trim() || '#f0b020';
 
-    for (let i = 0; i < METER_BARS; i++) {
-      const [loBin, hiBin, tilt] = barBins[i];
+    const accent = getComputedStyle(document.documentElement)
+      .getPropertyValue('--accent').trim() || '#f0b020';
+    meterCtx.strokeStyle = accent;
+    meterCtx.lineWidth = METER_LINE_WIDTH;
+    meterCtx.lineJoin = 'round';
+    meterCtx.lineCap = 'round';
+
+    // Compute smoothed values for every sample point
+    for (let i = 0; i < METER_POINTS; i++) {
+      const [loBin, hiBin, tilt] = sampleBins[i];
 
       let sum = 0;
       for (let b = loBin; b < hiBin; b++) {
@@ -602,26 +604,33 @@ function startMeter() {
       const avg = sum / (hiBin - loBin);
       const norm = avg / 255;
 
-      // Curve (0.8 = closer to linear) times tilt times gain
       const target = Math.min(1, Math.pow(norm, 0.8) * tilt * GAIN);
 
       const prev = displayValues[i];
       const factor = target > prev ? ATTACK : RELEASE;
-      const smoothed = prev + (target - prev) * factor;
-      displayValues[i] = smoothed;
-
-      const barHeight = smoothed * (centerY - 4);
-
-      const x = i * barWidth + barWidth * 0.15;
-      const bw = barWidth * 0.7;
-
-      meterCtx.fillRect(x, centerY - barHeight, bw, barHeight * 2);
+      displayValues[i] = prev + (target - prev) * factor;
     }
 
-    meterRaf = requestAnimationFrame(draw);
+    // Draw a single stroked line across the top edge
+    meterCtx.beginPath();
+    for (let i = 0; i < METER_POINTS; i++) {
+      const x = (i / (METER_POINTS - 1)) * w;
+      const y = centerY - displayValues[i] * (centerY - 4);
+      if (i === 0) {
+        meterCtx.moveTo(x, y);
+      } else {
+        meterCtx.lineTo(x, y);
+      }
+    }
+    meterCtx.stroke();
   };
 
-  draw();
+  const loop = () => {
+    draw();
+    meterRaf = requestAnimationFrame(loop);
+  };
+
+  loop();
 }
 
 function stopMeter() {
