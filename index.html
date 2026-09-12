@@ -545,8 +545,8 @@ function startMeter() {
 
   const freqData = new Uint8Array(analyser.frequencyBinCount);
 
-  const minFreq = 40;
-  const maxFreq = 16000;
+  const minFreq = 200;
+  const maxFreq = 12000;
   const nyquist = audioCtx.sampleRate / 2;
   const binCount = analyser.frequencyBinCount;
 
