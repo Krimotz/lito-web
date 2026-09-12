@@ -401,7 +401,7 @@ function connect() {
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 1024;
-  analyser.smoothingTimeConstant = 0.2;
+  analyser.smoothingTimeConstant = 0;
   analyserData = new Uint8Array(analyser.fftSize);
   analyser.connect(audioCtx.destination);
 
