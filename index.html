@@ -545,10 +545,9 @@ function startMeter() {
 
   const freqData = new Uint8Array(analyser.frequencyBinCount);
 
-  // Precompute logarithmic bin groupings so lower frequencies get more bars
-  // (matches human hearing, which is roughly logarithmic)
-  const minFreq = 40;       // Hz — below this is rumble
-  const maxFreq = 16000;    // Hz — above this is mostly inaudible
+  // Precompute logarithmic bin groupings
+  const minFreq = 40;
+  const maxFreq = 16000;
   const nyquist = audioCtx.sampleRate / 2;
   const binCount = analyser.frequencyBinCount;
 
@@ -557,15 +556,25 @@ function startMeter() {
     const loFrac = i / METER_BARS;
     const hiFrac = (i + 1) / METER_BARS;
 
-    // Exponential interpolation between minFreq and maxFreq
     const loHz = minFreq * Math.pow(maxFreq / minFreq, loFrac);
     const hiHz = minFreq * Math.pow(maxFreq / minFreq, hiFrac);
 
     const loBin = Math.max(0, Math.floor(loHz / nyquist * binCount));
     const hiBin = Math.min(binCount - 1, Math.floor(hiHz / nyquist * binCount));
 
-    barBins.push([loBin, Math.max(hiBin, loBin + 1)]);
+    // Precompute a frequency tilt factor: higher bars get boosted.
+    // 0 = flat, 1 = strong treble boost. 0.5 is a good middle ground.
+    const centerHz = Math.sqrt(loHz * hiHz);
+    const tilt = Math.pow(centerHz / minFreq, 0.5);
+
+    barBins.push([loBin, Math.max(hiBin, loBin + 1), tilt]);
   }
+
+  // Per-bar smoothing state. Attack is fast, release is slower — mimics VU meters.
+  const displayValues = new Float32Array(METER_BARS);
+
+  const ATTACK = 0.6;   // how fast a bar rises (0..1, higher = snappier)
+  const RELEASE = 0.15; // how fast a bar falls (0..1, lower = smoother)
 
   const draw = () => {
     if (!analyser) return;
@@ -582,18 +591,25 @@ function startMeter() {
       .getPropertyValue('--accent').trim() || '#f0b020';
 
     for (let i = 0; i < METER_BARS; i++) {
-      const [loBin, hiBin] = barBins[i];
+      const [loBin, hiBin, tilt] = barBins[i];
 
       let sum = 0;
       for (let b = loBin; b < hiBin; b++) {
         sum += freqData[b];
       }
-      const avg = sum / (hiBin - loBin);       // 0..255
-      const norm = avg / 255;                  // 0..1
+      const avg = sum / (hiBin - loBin);
+      const norm = avg / 255;
 
-      // Slight curve so quiet frequencies still show movement
-      const amplitude = Math.min(1, Math.pow(norm, 0.7) * 1.1);
-      const barHeight = amplitude * (centerY - 4);
+      // Apply tilt and a mild curve
+      const target = Math.min(1, Math.pow(norm, 0.7) * tilt);
+
+      // Fast attack, slow release
+      const prev = displayValues[i];
+      const factor = target > prev ? ATTACK : RELEASE;
+      const smoothed = prev + (target - prev) * factor;
+      displayValues[i] = smoothed;
+
+      const barHeight = smoothed * (centerY - 4);
 
       const x = i * barWidth + barWidth * 0.15;
       const bw = barWidth * 0.7;
