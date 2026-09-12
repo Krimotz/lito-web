@@ -611,11 +611,12 @@ function startMeter() {
       displayValues[i] = prev + (target - prev) * factor;
     }
 
-    // Draw a single stroked line across the top edge
+        // Draw a zigzag: alternate sample points between the top and bottom halves
     meterCtx.beginPath();
     for (let i = 0; i < METER_POINTS; i++) {
       const x = (i / (METER_POINTS - 1)) * w;
-      const y = centerY - displayValues[i] * (centerY - 4);
+      const flip = (i % 2 === 0) ? -1 : 1;
+      const y = centerY + flip * displayValues[i] * (centerY - 4);
       if (i === 0) {
         meterCtx.moveTo(x, y);
       } else {
