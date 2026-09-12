@@ -256,7 +256,7 @@ const AUTOCONNECT_DELAY_MS = 800;
 const COLD_START_MESSAGES = [
   [0,     'connecting…'],
   [3000,  'waking server…'],
-  [15000, 'still waking — first connect can take up to a minute'],
+  [15000, 'still waking —  connect can take up to a minute'],
   [45000, 'this is taking longer than usual, still trying…'],
 ];
 
@@ -610,9 +610,13 @@ function startMeter() {
       const factor = target > prev ? ATTACK : RELEASE;
       displayValues[i] = prev + (target - prev) * factor;
     }
-        // Force the endpoints to center so the line always begins and ends in the middle
-    displayValues[0] = 0;
-    displayValues[METER_POINTS - 1] = 0;
+    
+// Anchor a few points at each end for a calmer lead-in
+    const ANCHOR = 3;
+    for (let i = 0; i < ANCHOR; i++) {
+      displayValues[i] = 0;
+      displayValues[METER_POINTS - 1 - i] = 0;
+    }
 
             // Compute the zigzag points first
     const points = [];
