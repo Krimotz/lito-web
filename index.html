@@ -74,6 +74,7 @@
 <div id="meter"><div id="meterFill"></div></div>
 
 <script>
+  
 // ⚠️ Update this to your actual Render URL
 const SERVER_BASE = 'wss://lito-server.onrender.com';
 
@@ -91,7 +92,9 @@ const disconnectBtn = document.getElementById('disconnectBtn');
 const params = new URLSearchParams(location.search);
 const presetRoom = params.get('room');
 if (presetRoom) roomInput.value = presetRoom;
-
+  
+let playCount = 0;
+let firstChunkLogged = false;
 let ws = null;
 let audioCtx = null;
 let nextPlayTime = 0;
@@ -117,6 +120,9 @@ connectBtn.onclick = () => {
 
   // AudioContext must be created after a user gesture (this click)
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') {
+  audioCtx.resume();
+}
 
   // Set up analyser for the level meter
   analyser = audioCtx.createAnalyser();
@@ -155,6 +161,9 @@ connectBtn.onclick = () => {
     }
 
     if (event.data instanceof ArrayBuffer) {
+      if (playCount === 0 && !firstChunkLogged) {
+  console.log('Binary frame received, length:', event.data.byteLength);
+}
       if (!confirmed) {
         // First audio chunk also counts as confirmation
         confirmed = true;
@@ -201,6 +210,18 @@ function playPcm(arrayBuffer) {
   const int16 = new Int16Array(arrayBuffer);
   const frames = Math.floor(int16.length / CHANNELS);
   if (frames === 0) return;
+  playCount++;
+if (!firstChunkLogged) {
+  firstChunkLogged = true;
+  console.log('FIRST PCM CHUNK ARRIVED', {
+    bytes: arrayBuffer.byteLength,
+    frames,
+    ctxState: audioCtx.state
+  });
+}
+if (playCount % 40 === 0) {
+  console.log(`Playing ${playCount} chunks | ctx=${audioCtx.state} | next=${nextPlayTime.toFixed(2)} | now=${audioCtx.currentTime.toFixed(2)} | drift=${(nextPlayTime - audioCtx.currentTime).toFixed(2)}s`);
+}
 
   const buffer = audioCtx.createBuffer(CHANNELS, frames, SAMPLE_RATE);
   for (let ch = 0; ch < CHANNELS; ch++) {
