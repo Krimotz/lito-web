@@ -538,7 +538,7 @@ function playPcm(arrayBuffer) {
 // Live frequency meter — single stroked line
 // ═══════════════════════════════════════════════════════════════════
 
-const METER_POINTS = 48;       // number of sample points along the line
+const METER_POINTS = 30;       // number of sample points along the line
 const METER_LINE_WIDTH = 2;    // pixels
 
 function startMeter() {
@@ -626,7 +626,7 @@ function startMeter() {
 
     // How curvy the corners are. 0 = straight lines (original),
     // 1 = fully rounded. 0.5 is a gentle roundness.
-    const CURVINESS = 0.5;
+    const CURVINESS = 0.9;
 
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = points[i - 1] || points[i];
