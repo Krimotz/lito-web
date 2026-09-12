@@ -543,10 +543,34 @@ const METER_BARS = 48;
 function startMeter() {
   if (meterRaf) return;
 
-  const draw = () => {
-    if (!analyser || !analyserData) return;
+  const freqData = new Uint8Array(analyser.frequencyBinCount);
 
-    analyser.getByteTimeDomainData(analyserData);
+  // Precompute logarithmic bin groupings so lower frequencies get more bars
+  // (matches human hearing, which is roughly logarithmic)
+  const minFreq = 40;       // Hz — below this is rumble
+  const maxFreq = 16000;    // Hz — above this is mostly inaudible
+  const nyquist = audioCtx.sampleRate / 2;
+  const binCount = analyser.frequencyBinCount;
+
+  const barBins = [];
+  for (let i = 0; i < METER_BARS; i++) {
+    const loFrac = i / METER_BARS;
+    const hiFrac = (i + 1) / METER_BARS;
+
+    // Exponential interpolation between minFreq and maxFreq
+    const loHz = minFreq * Math.pow(maxFreq / minFreq, loFrac);
+    const hiHz = minFreq * Math.pow(maxFreq / minFreq, hiFrac);
+
+    const loBin = Math.max(0, Math.floor(loHz / nyquist * binCount));
+    const hiBin = Math.min(binCount - 1, Math.floor(hiHz / nyquist * binCount));
+
+    barBins.push([loBin, Math.max(hiBin, loBin + 1)]);
+  }
+
+  const draw = () => {
+    if (!analyser) return;
+
+    analyser.getByteFrequencyData(freqData);
 
     const w = meterCanvas.width;
     const h = meterCanvas.height;
@@ -557,20 +581,18 @@ function startMeter() {
     meterCtx.fillStyle = getComputedStyle(document.documentElement)
       .getPropertyValue('--accent').trim() || '#f0b020';
 
-    const samplesPerBar = Math.floor(analyserData.length / METER_BARS);
-
     for (let i = 0; i < METER_BARS; i++) {
-      // Peak amplitude within this bar's slice
-      let peak = 0;
-      const start = i * samplesPerBar;
-      for (let j = 0; j < samplesPerBar; j++) {
-        const v = Math.abs((analyserData[start + j] - 128) / 128);
-        if (v > peak) peak = v;
-      }
+      const [loBin, hiBin] = barBins[i];
 
-      // Gentle curve: sqrt stretches quiet parts, compresses loud parts.
-      // Tune the multiplier to taste — 1.0 is neutral, higher is more reactive.
-      const amplitude = Math.min(1, Math.sqrt(peak) * 1.15);
+      let sum = 0;
+      for (let b = loBin; b < hiBin; b++) {
+        sum += freqData[b];
+      }
+      const avg = sum / (hiBin - loBin);       // 0..255
+      const norm = avg / 255;                  // 0..1
+
+      // Slight curve so quiet frequencies still show movement
+      const amplitude = Math.min(1, Math.pow(norm, 0.7) * 1.1);
       const barHeight = amplitude * (centerY - 4);
 
       const x = i * barWidth + barWidth * 0.15;
