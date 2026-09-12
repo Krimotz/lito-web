@@ -5,76 +5,241 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LiTo — Listen Together</title>
 <style>
-  :root { color-scheme: light dark; }
-  body {
-    font-family: system-ui, -apple-system, sans-serif;
-    max-width: 460px;
-    margin: 3rem auto;
-    padding: 0 1.25rem;
-    line-height: 1.5;
+  :root {
+    color-scheme: dark;
+    --bg: #0e0e10;
+    --fg: #e8e8ea;
+    --dim: #6a6a72;
+    --line: #1e1e22;
+    --accent: #f0b020;
+    --error: #e05555;
   }
-  h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
-  p.sub { margin: 0 0 1.5rem; color: #666; font-size: 0.95rem; }
-  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; }
-  input {
-    font-size: 1rem;
-    padding: 0.6rem;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    margin-bottom: 0.75rem;
-    background: transparent;
-    color: inherit;
-  }
-  .row { display: flex; gap: 0.5rem; }
-  button {
-    font-size: 1rem;
-    padding: 0.6rem 1rem;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    background: #f5f5f5;
-    color: #222;
-    cursor: pointer;
-    flex: 1;
-  }
-  button:hover:not(:disabled) { background: #ebebeb; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  #status { margin-top: 1.25rem; font-size: 0.9rem; color: #555; }
-  #meter {
-    margin-top: 1rem;
-    height: 6px;
-    background: #eee;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  #meterFill {
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
     height: 100%;
-    width: 0;
-    background: #4caf50;
-    transition: width 80ms linear;
   }
-  .error { color: #c33; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  header {
+    text-align: center;
+    letter-spacing: 0.3em;
+    font-size: 12px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  .hero {
+    text-align: center;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .hero-code {
+    font-size: 44px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .hero-label {
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  .hero-status {
+    font-size: 13px;
+    color: var(--dim);
+    min-height: 1.2em;
+  }
+
+  .hero-status.error { color: var(--error); }
+
+  .hero-status.live {
+    color: var(--accent);
+  }
+
+  .hero-status.live::before {
+    content: "● ";
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  canvas#meter {
+    width: 100%;
+    height: 60px;
+    display: block;
+  }
+
+  input#room {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--fg);
+    font: inherit;
+    font-size: 20px;
+    letter-spacing: 0.2em;
+    text-align: center;
+    padding: 0.75rem;
+    text-transform: lowercase;
+  }
+
+  input#room:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  input#room::placeholder {
+    color: #333338;
+    letter-spacing: 0.2em;
+  }
+
+  input#room:disabled {
+    opacity: 0.4;
+  }
+
+  button {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--fg);
+    color: var(--fg);
+    font: inherit;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.9rem;
+    cursor: pointer;
+    transition: background 120ms, color 120ms, border-color 120ms;
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  button.stop {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  button.stop:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  #tapOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(14, 14, 16, 0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  #tapOverlay.visible { display: flex; }
+
+  #tapOverlay .label {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  #tapOverlay .big {
+    font-size: 20px;
+    color: var(--fg);
+  }
 </style>
 </head>
 <body>
 
-<h1>LiTo</h1>
-<p class="sub">Enter the room code shown on the broadcaster's phone.</p>
+<main>
+  <header>LiTo</header>
 
-<label for="room">Room code</label>
-<input id="room" placeholder="a4f9" autocomplete="off" autocapitalize="off" spellcheck="false" />
+  <div class="hero">
+    <div id="heroCode" class="hero-code">____</div>
+    <div id="heroLabel" class="hero-label">room code</div>
+    <div id="heroStatus" class="hero-status">idle</div>
+  </div>
 
-<div class="row">
-  <button id="connectBtn">Connect</button>
-  <button id="disconnectBtn" disabled>Disconnect</button>
+  <canvas id="meter" width="760" height="120"></canvas>
+
+  <input
+    id="room"
+    type="text"
+    placeholder="a4f9"
+    autocomplete="off"
+    autocapitalize="off"
+    autocorrect="off"
+    spellcheck="false"
+    maxlength="12"
+  />
+
+  <button id="toggleBtn">Listen</button>
+
+  <footer>listen together</footer>
+</main>
+
+<div id="tapOverlay">
+  <div class="label">audio is playing</div>
+  <div class="big">tap anywhere to hear it</div>
 </div>
 
-<div id="status">Idle</div>
-<div id="meter"><div id="meterFill"></div></div>
-
 <script>
-// ⚠️ Update this to your actual Render URL
+// ═══════════════════════════════════════════════════════════════════
+// Configuration
+// ═══════════════════════════════════════════════════════════════════
+
 const SERVER_BASE = 'wss://lito-server.onrender.com';
 
 // PCM format — must match AudioCaptureManager.kt on the Android side
@@ -83,6 +248,35 @@ const CHANNELS = 2;
 
 // Room ID scheme
 const ROOM_PREFIX = 'lito';
+
+// Auto-connect delay (ms) when the page loads with ?room=... in the URL.
+// Increase for a slower, more deliberate feel; decrease to jump straight in.
+const AUTOCONNECT_DELAY_MS = 800;
+
+// Progressive cold-start messages: [elapsedMs, message]
+const COLD_START_MESSAGES = [
+  [0,     'connecting…'],
+  [3000,  'waking server…'],
+  [15000, 'still waking — first connect can take up to a minute'],
+  [45000, 'this is taking longer than usual, still trying…'],
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// DOM references
+// ═══════════════════════════════════════════════════════════════════
+
+const heroCode = document.getElementById('heroCode');
+const heroLabel = document.getElementById('heroLabel');
+const heroStatus = document.getElementById('heroStatus');
+const meterCanvas = document.getElementById('meter');
+const meterCtx = meterCanvas.getContext('2d');
+const roomInput = document.getElementById('room');
+const toggleBtn = document.getElementById('toggleBtn');
+const tapOverlay = document.getElementById('tapOverlay');
+
+// ═══════════════════════════════════════════════════════════════════
+// Room ID helpers
+// ═══════════════════════════════════════════════════════════════════
 
 function normalizeRoomCode(input) {
   if (!input) return null;
@@ -101,16 +295,9 @@ function fullRoomId(code) {
   return ROOM_PREFIX + code;
 }
 
-const statusEl = document.getElementById('status');
-const meterFill = document.getElementById('meterFill');
-const roomInput = document.getElementById('room');
-const connectBtn = document.getElementById('connectBtn');
-const disconnectBtn = document.getElementById('disconnectBtn');
-
-// Pre-fill from ?room=... query string
-const params = new URLSearchParams(location.search);
-const presetCode = normalizeRoomCode(params.get('room'));
-if (presetCode) roomInput.value = presetCode;
+// ═══════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════
 
 let ws = null;
 let audioCtx = null;
@@ -118,29 +305,103 @@ let nextPlayTime = 0;
 let analyser = null;
 let analyserData = null;
 let meterRaf = null;
+let coldStartTimer = null;
+let isConnected = false;
 
-function setStatus(text, isError = false) {
-  statusEl.textContent = text;
-  statusEl.className = isError ? 'error' : '';
+// ═══════════════════════════════════════════════════════════════════
+// UI helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function setHeroCode(text) {
+  heroCode.textContent = text;
 }
 
-connectBtn.onclick = () => {
+function setHeroLabel(text) {
+  heroLabel.textContent = text;
+}
+
+function setStatus(text, isError = false) {
+  heroStatus.textContent = text;
+  heroStatus.className = 'hero-status' +
+    (isError ? ' error' : '') +
+    (text === 'live' ? ' live' : '');
+}
+
+function setIdleUi() {
+  isConnected = false;
+  setHeroCode('____');
+  setHeroLabel('room code');
+  setStatus('idle');
+  toggleBtn.textContent = 'Listen';
+  toggleBtn.classList.remove('stop');
+  toggleBtn.disabled = false;
+  roomInput.disabled = false;
+}
+
+function setConnectedUi(code) {
+  isConnected = true;
+  setHeroCode(code);
+  setHeroLabel('room');
+  toggleBtn.textContent = 'Stop';
+  toggleBtn.classList.add('stop');
+  toggleBtn.disabled = false;
+  roomInput.disabled = true;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Cold-start messaging
+// ═══════════════════════════════════════════════════════════════════
+
+function startColdStartMessages() {
+  stopColdStartMessages();
+  const start = Date.now();
+  let index = 0;
+
+  const tick = () => {
+    const elapsed = Date.now() - start;
+    while (
+      index + 1 < COLD_START_MESSAGES.length &&
+      elapsed >= COLD_START_MESSAGES[index + 1][0]
+    ) {
+      index++;
+    }
+    setStatus(COLD_START_MESSAGES[index][1]);
+    coldStartTimer = setTimeout(tick, 500);
+  };
+
+  tick();
+}
+
+function stopColdStartMessages() {
+  if (coldStartTimer) {
+    clearTimeout(coldStartTimer);
+    coldStartTimer = null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Connection lifecycle
+// ═══════════════════════════════════════════════════════════════════
+
+function connect() {
   const code = normalizeRoomCode(roomInput.value);
   if (!code) {
-    setStatus('Enter a room code first', true);
+    setStatus('enter a room code', true);
     return;
   }
 
-  setStatus('Connecting…');
-  connectBtn.disabled = true;
-  disconnectBtn.disabled = false;
+  setHeroCode(code);
+  setHeroLabel('room');
+  setStatus('connecting…');
+  toggleBtn.textContent = 'Cancel';
+  toggleBtn.classList.remove('stop');
+  roomInput.disabled = true;
 
-  // AudioContext must be created after a user gesture (this click)
+  // AudioContext must be created after a user gesture
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  // Set up analyser for the level meter
   analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 512;
+  analyser.fftSize = 1024;
   analyserData = new Uint8Array(analyser.fftSize);
   analyser.connect(audioCtx.destination);
 
@@ -150,70 +411,101 @@ connectBtn.onclick = () => {
   ws.binaryType = 'arraybuffer';
 
   let confirmed = false;
+  startColdStartMessages();
 
   ws.onopen = () => {
-    setStatus('Handshaking…');
+    setStatus('handshaking…');
   };
 
   ws.onmessage = (event) => {
-    // Server's first message is JSON; audio is always binary
     if (typeof event.data === 'string') {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'joined') {
           confirmed = true;
-          setStatus(`Connected to ${code} — waiting for audio`);
+          stopColdStartMessages();
+          setConnectedUi(code);
+          setStatus('waiting for audio…');
           startMeter();
+          checkAutoplay();
         } else if (msg.type === 'error') {
+          stopColdStartMessages();
           setStatus(msg.message, true);
           ws.close();
         }
-      } catch (_) {
-        // ignore malformed text frames
-      }
+      } catch (_) { /* ignore */ }
       return;
     }
 
     if (event.data instanceof ArrayBuffer) {
       if (!confirmed) {
-        // First audio chunk also counts as confirmation
         confirmed = true;
-        setStatus(`Connected to ${code}`);
+        stopColdStartMessages();
+        setConnectedUi(code);
         startMeter();
       }
+      setStatus('live');
       playPcm(event.data);
+      checkAutoplay();
     }
   };
 
   ws.onerror = () => {
-    setStatus('Connection error', true);
+    stopColdStartMessages();
+    setStatus('connection error', true);
   };
 
   ws.onclose = (event) => {
+    stopColdStartMessages();
     if (!confirmed) {
-      setStatus(`Could not connect: ${event.reason || 'unknown reason'}`, true);
+      setStatus(`could not connect: ${event.reason || 'unknown'}`, true);
+      setIdleUi();
     } else {
-      setStatus('Disconnected');
+      disconnect(false);
     }
-    stopPlayback();
-    connectBtn.disabled = false;
-    disconnectBtn.disabled = true;
   };
-};
+}
 
-disconnectBtn.onclick = () => {
-  ws?.close();
-};
+function disconnect(closeSocket = true) {
+  stopColdStartMessages();
+  if (closeSocket && ws) {
+    try { ws.close(); } catch (_) {}
+  }
+  ws = null;
 
-function stopPlayback() {
   stopMeter();
   try { audioCtx?.close(); } catch (_) {}
   audioCtx = null;
   analyser = null;
   analyserData = null;
   nextPlayTime = 0;
-  meterFill.style.width = '0%';
+
+  tapOverlay.classList.remove('visible');
+  setIdleUi();
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Autoplay handling
+// ═══════════════════════════════════════════════════════════════════
+
+function checkAutoplay() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    tapOverlay.classList.add('visible');
+  } else {
+    tapOverlay.classList.remove('visible');
+  }
+}
+
+tapOverlay.addEventListener('click', () => {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  tapOverlay.classList.remove('visible');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// PCM playback
+// ═══════════════════════════════════════════════════════════════════
 
 function playPcm(arrayBuffer) {
   if (!audioCtx || !analyser) return;
@@ -235,7 +527,6 @@ function playPcm(arrayBuffer) {
   source.connect(analyser);
 
   const now = audioCtx.currentTime;
-  // If we're behind (e.g. after a stall), resync rather than blast everything
   if (nextPlayTime < now + 0.05) {
     nextPlayTime = now + 0.05;
   }
@@ -243,27 +534,101 @@ function playPcm(arrayBuffer) {
   nextPlayTime += buffer.duration;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Live RMS meter (vertical bars, center-out)
+// ═══════════════════════════════════════════════════════════════════
+
+const METER_BARS = 48;
+
 function startMeter() {
-  const loop = () => {
+  if (meterRaf) return;
+
+  const draw = () => {
     if (!analyser || !analyserData) return;
+
     analyser.getByteTimeDomainData(analyserData);
-    let sum = 0;
-    for (let i = 0; i < analyserData.length; i++) {
-      const v = (analyserData[i] - 128) / 128;
-      sum += v * v;
+
+    const w = meterCanvas.width;
+    const h = meterCanvas.height;
+    const barWidth = w / METER_BARS;
+    const centerY = h / 2;
+
+    meterCtx.clearRect(0, 0, w, h);
+    meterCtx.fillStyle = getComputedStyle(document.documentElement)
+      .getPropertyValue('--accent').trim() || '#f0b020';
+
+    const samplesPerBar = Math.floor(analyserData.length / METER_BARS);
+
+    for (let i = 0; i < METER_BARS; i++) {
+      let sum = 0;
+      const start = i * samplesPerBar;
+      for (let j = 0; j < samplesPerBar; j++) {
+        const v = (analyserData[start + j] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / samplesPerBar);
+
+      // Slight boost so quiet passages still show a little movement
+      const amplitude = Math.min(1, rms * 4);
+      const barHeight = amplitude * (centerY - 4);
+
+      const x = i * barWidth + barWidth * 0.15;
+      const bw = barWidth * 0.7;
+
+      meterCtx.fillRect(x, centerY - barHeight, bw, barHeight * 2);
     }
-    const rms = Math.sqrt(sum / analyserData.length);
-    const pct = Math.min(100, Math.round(rms * 300)); // scale for visibility
-    meterFill.style.width = pct + '%';
-    meterRaf = requestAnimationFrame(loop);
+
+    meterRaf = requestAnimationFrame(draw);
   };
-  loop();
+
+  draw();
 }
 
 function stopMeter() {
-  if (meterRaf) cancelAnimationFrame(meterRaf);
-  meterRaf = null;
+  if (meterRaf) {
+    cancelAnimationFrame(meterRaf);
+    meterRaf = null;
+  }
+  meterCtx.clearRect(0, 0, meterCanvas.width, meterCanvas.height);
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Button handler — single toggle
+// ═══════════════════════════════════════════════════════════════════
+
+toggleBtn.addEventListener('click', () => {
+  const label = toggleBtn.textContent.toLowerCase();
+  if (label === 'listen' || label === 'retry') {
+    connect();
+  } else if (label === 'cancel' || label === 'stop') {
+    disconnect();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// URL pre-fill and auto-connect
+// ═══════════════════════════════════════════════════════════════════
+
+const params = new URLSearchParams(location.search);
+const presetCode = normalizeRoomCode(params.get('room'));
+
+if (presetCode) {
+  roomInput.value = presetCode;
+  setHeroCode(presetCode);
+  setHeroLabel('room');
+  setStatus('connecting…');
+  setTimeout(() => connect(), AUTOCONNECT_DELAY_MS);
+} else {
+  setIdleUi();
+}
+
+// Resize canvas to match device pixel ratio for crisp rendering
+(function setupCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = meterCanvas.getBoundingClientRect();
+  meterCanvas.width = rect.width * dpr;
+  meterCanvas.height = rect.height * dpr;
+})();
 </script>
 
 </body>
