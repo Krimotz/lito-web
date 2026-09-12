@@ -560,16 +560,17 @@ function startMeter() {
     const samplesPerBar = Math.floor(analyserData.length / METER_BARS);
 
     for (let i = 0; i < METER_BARS; i++) {
-      let sum = 0;
+      // Peak amplitude within this bar's slice
+      let peak = 0;
       const start = i * samplesPerBar;
       for (let j = 0; j < samplesPerBar; j++) {
-        const v = (analyserData[start + j] - 128) / 128;
-        sum += v * v;
+        const v = Math.abs((analyserData[start + j] - 128) / 128);
+        if (v > peak) peak = v;
       }
-      const rms = Math.sqrt(sum / samplesPerBar);
 
-      // Slight boost so quiet passages still show a little movement
-      const amplitude = Math.min(1, rms * 4);
+      // Gentle curve: sqrt stretches quiet parts, compresses loud parts.
+      // Tune the multiplier to taste — 1.0 is neutral, higher is more reactive.
+      const amplitude = Math.min(1, Math.sqrt(peak) * 1.15);
       const barHeight = amplitude * (centerY - 4);
 
       const x = i * barWidth + barWidth * 0.15;
