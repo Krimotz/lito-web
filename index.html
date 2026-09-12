@@ -610,6 +610,9 @@ function startMeter() {
       const factor = target > prev ? ATTACK : RELEASE;
       displayValues[i] = prev + (target - prev) * factor;
     }
+        // Force the endpoints to center so the line always begins and ends in the middle
+    displayValues[0] = 0;
+    displayValues[METER_POINTS - 1] = 0;
 
             // Compute the zigzag points first
     const points = [];
