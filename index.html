@@ -60,10 +60,10 @@
 <body>
 
 <h1>LiTo</h1>
-<p class="sub">Enter the room ID shown on the broadcaster's phone.</p>
+<p class="sub">Enter the room code shown on the broadcaster's phone.</p>
 
-<label for="room">Room ID</label>
-<input id="room" placeholder="lito-xxxx" autocomplete="off" autocapitalize="off" spellcheck="false" />
+<label for="room">Room code</label>
+<input id="room" placeholder="a4f9" autocomplete="off" autocapitalize="off" spellcheck="false" />
 
 <div class="row">
   <button id="connectBtn">Connect</button>
@@ -74,13 +74,32 @@
 <div id="meter"><div id="meterFill"></div></div>
 
 <script>
-  
 // ⚠️ Update this to your actual Render URL
 const SERVER_BASE = 'wss://lito-server.onrender.com';
 
 // PCM format — must match AudioCaptureManager.kt on the Android side
 const SAMPLE_RATE = 44100;
 const CHANNELS = 2;
+
+// Room ID scheme
+const ROOM_PREFIX = 'lito';
+
+function normalizeRoomCode(input) {
+  if (!input) return null;
+  const cleaned = String(input)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  if (!cleaned) return null;
+  const code = cleaned.startsWith(ROOM_PREFIX)
+    ? cleaned.slice(ROOM_PREFIX.length)
+    : cleaned;
+  return code || null;
+}
+
+function fullRoomId(code) {
+  return ROOM_PREFIX + code;
+}
 
 const statusEl = document.getElementById('status');
 const meterFill = document.getElementById('meterFill');
@@ -90,11 +109,9 @@ const disconnectBtn = document.getElementById('disconnectBtn');
 
 // Pre-fill from ?room=... query string
 const params = new URLSearchParams(location.search);
-const presetRoom = params.get('room');
-if (presetRoom) roomInput.value = presetRoom;
-  
-let playCount = 0;
-let firstChunkLogged = false;
+const presetCode = normalizeRoomCode(params.get('room'));
+if (presetCode) roomInput.value = presetCode;
+
 let ws = null;
 let audioCtx = null;
 let nextPlayTime = 0;
@@ -108,9 +125,9 @@ function setStatus(text, isError = false) {
 }
 
 connectBtn.onclick = () => {
-  const room = roomInput.value.trim();
-  if (!room) {
-    setStatus('Enter a room ID first', true);
+  const code = normalizeRoomCode(roomInput.value);
+  if (!code) {
+    setStatus('Enter a room code first', true);
     return;
   }
 
@@ -120,9 +137,6 @@ connectBtn.onclick = () => {
 
   // AudioContext must be created after a user gesture (this click)
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') {
-  audioCtx.resume();
-}
 
   // Set up analyser for the level meter
   analyser = audioCtx.createAnalyser();
@@ -132,7 +146,7 @@ connectBtn.onclick = () => {
 
   nextPlayTime = audioCtx.currentTime + 0.1;
 
-  ws = new WebSocket(`${SERVER_BASE}/listen/${room}`);
+  ws = new WebSocket(`${SERVER_BASE}/listen/${fullRoomId(code)}`);
   ws.binaryType = 'arraybuffer';
 
   let confirmed = false;
@@ -148,7 +162,7 @@ connectBtn.onclick = () => {
         const msg = JSON.parse(event.data);
         if (msg.type === 'joined') {
           confirmed = true;
-          setStatus(`Connected to ${room} — waiting for audio`);
+          setStatus(`Connected to ${code} — waiting for audio`);
           startMeter();
         } else if (msg.type === 'error') {
           setStatus(msg.message, true);
@@ -161,13 +175,10 @@ connectBtn.onclick = () => {
     }
 
     if (event.data instanceof ArrayBuffer) {
-      if (playCount === 0 && !firstChunkLogged) {
-  console.log('Binary frame received, length:', event.data.byteLength);
-}
       if (!confirmed) {
         // First audio chunk also counts as confirmation
         confirmed = true;
-        setStatus(`Connected to ${room}`);
+        setStatus(`Connected to ${code}`);
         startMeter();
       }
       playPcm(event.data);
@@ -210,18 +221,6 @@ function playPcm(arrayBuffer) {
   const int16 = new Int16Array(arrayBuffer);
   const frames = Math.floor(int16.length / CHANNELS);
   if (frames === 0) return;
-  playCount++;
-if (!firstChunkLogged) {
-  firstChunkLogged = true;
-  console.log('FIRST PCM CHUNK ARRIVED', {
-    bytes: arrayBuffer.byteLength,
-    frames,
-    ctxState: audioCtx.state
-  });
-}
-if (playCount % 40 === 0) {
-  console.log(`Playing ${playCount} chunks | ctx=${audioCtx.state} | next=${nextPlayTime.toFixed(2)} | now=${audioCtx.currentTime.toFixed(2)} | drift=${(nextPlayTime - audioCtx.currentTime).toFixed(2)}s`);
-}
 
   const buffer = audioCtx.createBuffer(CHANNELS, frames, SAMPLE_RATE);
   for (let ch = 0; ch < CHANNELS; ch++) {
