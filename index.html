@@ -547,8 +547,8 @@ function startMeter() {
   const freqData = new Uint8Array(analyser.frequencyBinCount);
 
   // Frequency range: shifted upward to emphasize mids and highs
-  const minFreq = 200;
-  const maxFreq = 12000;
+  const minFreq = 600;
+  const maxFreq = 16000;
   const nyquist = audioCtx.sampleRate / 2;
   const binCount = analyser.frequencyBinCount;
 
