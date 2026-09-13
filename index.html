@@ -351,6 +351,10 @@
     accent-color: var(--accent);
   }
 
+  #debugPanel input[type="range"] + input[type="range"] {
+    margin-top: 4px;
+  }
+
   #debugPanel button {
     width: 100%;
     padding: 8px;
@@ -448,6 +452,11 @@
   <h2>Vocal band (color)</h2>
   <section>
     <div class="slider-row">
+      <label><span>vocal range (Hz)</span><span class="value"><span id="lblVocalMin">300</span> – <span id="lblVocalMax">3000</span></span></label>
+      <input type="range" id="sldVocalMin" min="20" max="20000" step="10" value="300">
+      <input type="range" id="sldVocalMax" min="20" max="20000" step="10" value="3000">
+    </div>
+    <div class="slider-row">
       <label><span>vocal floor</span><span class="value" id="lblVocalFloor">0</span></label>
       <input type="range" id="sldVocalFloor" min="0" max="0.5" step="0.005" value="0">
     </div>
@@ -463,6 +472,11 @@
 
   <h2>Bass band (scale)</h2>
   <section>
+    <div class="slider-row">
+      <label><span>bass range (Hz)</span><span class="value"><span id="lblBassMin">40</span> – <span id="lblBassMax">160</span></span></label>
+      <input type="range" id="sldBassMin" min="20" max="20000" step="10" value="40">
+      <input type="range" id="sldBassMax" min="20" max="20000" step="10" value="160">
+    </div>
     <div class="slider-row">
       <label><span>bass floor</span><span class="value" id="lblBassFloor">0</span></label>
       <input type="range" id="sldBassFloor" min="0" max="0.5" step="0.005" value="0">
@@ -1096,7 +1110,8 @@ window.addEventListener('resize', setupCanvas);
     panel.classList.toggle('open');
   });
 
-  const sliders = [
+  // ── Simple single-value sliders ────────────────────────────────
+  const simpleSliders = [
     ['sldVocalFloor',   'lblVocalFloor',   'VOCAL_FLOOR',   v => v.toFixed(3)],
     ['sldVocalCeiling', 'lblVocalCeiling', 'VOCAL_CEILING', v => v.toFixed(3)],
     ['sldColorRelease', 'lblColorRelease', 'COLOR_RELEASE', v => v.toFixed(2)],
@@ -1106,7 +1121,7 @@ window.addEventListener('resize', setupCanvas);
     ['sldScaleRelease', 'lblScaleRelease', 'SCALE_RELEASE', v => v.toFixed(2)],
   ];
 
-  for (const [sliderId, labelId, key, fmt] of sliders) {
+  for (const [sliderId, labelId, key, fmt] of simpleSliders) {
     const slider = document.getElementById(sliderId);
     const label = document.getElementById(labelId);
 
@@ -1120,14 +1135,85 @@ window.addEventListener('resize', setupCanvas);
     });
   }
 
+  // ── Paired range sliders ───────────────────────────────────────
+  // Each pair has a min slider, a max slider, and two labels. The
+  // min slider's value can never exceed the max, and vice versa.
+  const rangePairs = [
+    {
+      minSliderId: 'sldVocalMin', maxSliderId: 'sldVocalMax',
+      minLabelId:  'lblVocalMin', maxLabelId:  'lblVocalMax',
+      minKey: 'VOCAL_MIN_HZ', maxKey: 'VOCAL_MAX_HZ',
+    },
+    {
+      minSliderId: 'sldBassMin',  maxSliderId: 'sldBassMax',
+      minLabelId:  'lblBassMin',  maxLabelId:  'lblBassMax',
+      minKey: 'BASS_MIN_HZ', maxKey: 'BASS_MAX_HZ',
+    },
+  ];
+
+  for (const pair of rangePairs) {
+    const minSlider = document.getElementById(pair.minSliderId);
+    const maxSlider = document.getElementById(pair.maxSliderId);
+    const minLabel  = document.getElementById(pair.minLabelId);
+    const maxLabel  = document.getElementById(pair.maxLabelId);
+
+    // Initialize from settings
+    minSlider.value = settings[pair.minKey];
+    maxSlider.value = settings[pair.maxKey];
+    minLabel.textContent = settings[pair.minKey];
+    maxLabel.textContent = settings[pair.maxKey];
+
+    const apply = (source) => {
+      let minVal = parseFloat(minSlider.value);
+      let maxVal = parseFloat(maxSlider.value);
+
+      // Enforce that min < max — push the other slider if necessary
+      if (source === 'min' && minVal > maxVal) {
+        maxVal = minVal;
+        maxSlider.value = maxVal;
+      } else if (source === 'max' && maxVal < minVal) {
+        minVal = maxVal;
+        minSlider.value = minVal;
+      }
+
+      settings[pair.minKey] = minVal;
+      settings[pair.maxKey] = maxVal;
+
+      minLabel.textContent = minVal;
+      maxLabel.textContent = maxVal;
+
+      // Rebuild the FFT bin ranges so the effect applies immediately
+      initLogoBands();
+    };
+
+    minSlider.addEventListener('input', () => apply('min'));
+    maxSlider.addEventListener('input', () => apply('max'));
+  }
+
+  // ── Reset ──────────────────────────────────────────────────────
   document.getElementById('dbgReset').addEventListener('click', () => {
     Object.assign(settings, LOGO_DEFAULTS);
-    for (const [sliderId, labelId, key, fmt] of sliders) {
+
+    for (const [sliderId, labelId, key, fmt] of simpleSliders) {
       const slider = document.getElementById(sliderId);
       const label = document.getElementById(labelId);
       slider.value = settings[key];
       label.textContent = fmt(settings[key]);
     }
+
+    for (const pair of rangePairs) {
+      const minSlider = document.getElementById(pair.minSliderId);
+      const maxSlider = document.getElementById(pair.maxSliderId);
+      const minLabel  = document.getElementById(pair.minLabelId);
+      const maxLabel  = document.getElementById(pair.maxLabelId);
+
+      minSlider.value = settings[pair.minKey];
+      maxSlider.value = settings[pair.maxKey];
+      minLabel.textContent = settings[pair.minKey];
+      maxLabel.textContent = settings[pair.maxKey];
+    }
+
+    initLogoBands();
   });
 })();
 </script>
