@@ -46,10 +46,6 @@
 
   header {
     text-align: center;
-    letter-spacing: 0.3em;
-    font-size: 12px;
-    color: var(--dim);
-    text-transform: uppercase;
   }
 
   .hero {
@@ -199,6 +195,134 @@
     font-size: 20px;
     color: var(--fg);
   }
+
+  /* ═══════════════════════════════════════════════════════════
+     Debug panel
+     ═══════════════════════════════════════════════════════════ */
+
+  #debugToggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--dim);
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 100;
+    padding: 0;
+  }
+
+  #debugToggle:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  #debugPanel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100vh;
+    background: #141416;
+    border-left: 1px solid var(--line);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 11px;
+    overflow-y: auto;
+    padding: 16px;
+    z-index: 99;
+    transform: translateX(100%);
+    transition: transform 200ms ease;
+    box-sizing: border-box;
+  }
+
+  #debugPanel.open {
+    transform: translateX(0);
+  }
+
+  #debugPanel h2 {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 12px;
+    font-weight: normal;
+  }
+
+  #debugPanel section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #debugPanel section:last-child {
+    border-bottom: none;
+  }
+
+  #debugPanel .readout {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #debugPanel .readout .value {
+    color: var(--accent);
+  }
+
+  #debugPanel .slider-row {
+    margin-bottom: 12px;
+  }
+
+  #debugPanel .slider-row label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    color: var(--dim);
+  }
+
+  #debugPanel .slider-row label .value {
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #debugPanel input[type="range"] {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+
+  #debugPanel button {
+    width: 100%;
+    padding: 8px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--dim);
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  #debugPanel button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  #debugPanel .band-color {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--line);
+    margin-left: 6px;
+    vertical-align: middle;
+  }
 </style>
 </head>
 <body>
@@ -254,6 +378,61 @@
   <div class="big">tap anywhere to hear it</div>
 </div>
 
+<button id="debugToggle" title="Debug panel">☰</button>
+
+<div id="debugPanel">
+  <h2>Live readings</h2>
+  <section>
+    <div class="readout"><span>vocal level</span><span class="value" id="dbgVocal">0.000</span></div>
+    <div class="readout"><span>bass level</span><span class="value" id="dbgBass">0.000</span></div>
+    <div class="readout"><span>vocal mapped</span><span class="value" id="dbgVocalMapped">0.000</span></div>
+    <div class="readout"><span>bass mapped</span><span class="value" id="dbgBassMapped">0.000</span></div>
+    <div class="readout"><span>color value</span><span class="value" id="dbgColorValue">0.000</span></div>
+    <div class="readout"><span>scale value</span><span class="value" id="dbgScaleValue">0.000</span></div>
+    <div class="readout"><span>current color</span><span class="value"><span id="dbgColorSwatch" class="band-color"></span></span></div>
+  </section>
+
+  <h2>Vocal band (color)</h2>
+  <section>
+    <div class="slider-row">
+      <label><span>vocal floor</span><span class="value" id="lblVocalFloor">0</span></label>
+      <input type="range" id="sldVocalFloor" min="0" max="0.5" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>vocal ceiling</span><span class="value" id="lblVocalCeiling">0</span></label>
+      <input type="range" id="sldVocalCeiling" min="0" max="1" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>color release</span><span class="value" id="lblColorRelease">0</span></label>
+      <input type="range" id="sldColorRelease" min="0.01" max="0.5" step="0.01" value="0.15">
+    </div>
+  </section>
+
+  <h2>Bass band (scale)</h2>
+  <section>
+    <div class="slider-row">
+      <label><span>bass floor</span><span class="value" id="lblBassFloor">0</span></label>
+      <input type="range" id="sldBassFloor" min="0" max="0.5" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>bass ceiling</span><span class="value" id="lblBassCeiling">0</span></label>
+      <input type="range" id="sldBassCeiling" min="0" max="1" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>scale range</span><span class="value" id="lblScaleRange">0</span></label>
+      <input type="range" id="sldScaleRange" min="0" max="0.5" step="0.01" value="0.25">
+    </div>
+    <div class="slider-row">
+      <label><span>scale release</span><span class="value" id="lblScaleRelease">0</span></label>
+      <input type="range" id="sldScaleRelease" min="0.01" max="0.5" step="0.01" value="0.15">
+    </div>
+  </section>
+
+  <section>
+    <button id="dbgReset">Reset to defaults</button>
+  </section>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // Configuration
@@ -261,21 +440,17 @@
 
 const SERVER_BASE = 'wss://lito-server.onrender.com';
 
-// PCM format — must match AudioCaptureManager.kt on the Android side
 const SAMPLE_RATE = 44100;
 const CHANNELS = 2;
 
-// Room ID scheme
 const ROOM_PREFIX = 'lito';
 
-// Auto-connect delay (ms) when the page loads with ?room=... in the URL.
 const AUTOCONNECT_DELAY_MS = 800;
 
-// Progressive cold-start messages: [elapsedMs, message]
 const COLD_START_MESSAGES = [
   [0,     'connecting…'],
   [3000,  'waking server…'],
-  [15000, 'still waking —  connect can take up to a minute'],
+  [15000, 'still waking — first connect can take up to a minute'],
   [45000, 'this is taking longer than usual, still trying…'],
 ];
 
@@ -417,7 +592,6 @@ function connect() {
   toggleBtn.classList.remove('stop');
   roomInput.disabled = true;
 
-  // AudioContext must be created after a user gesture
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
   analyser = audioCtx.createAnalyser();
@@ -495,7 +669,7 @@ function disconnect(closeSocket = true) {
   ws = null;
 
   stopMeter();
-  
+
   try { audioCtx?.close(); } catch (_) {}
   audioCtx = null;
   analyser = null;
@@ -560,21 +734,19 @@ function playPcm(arrayBuffer) {
 // Live frequency meter — single stroked line
 // ═══════════════════════════════════════════════════════════════════
 
-const METER_POINTS = 30;       // number of sample points along the line
-const METER_LINE_WIDTH = 4;    // pixels
+const METER_POINTS = 30;
+const METER_LINE_WIDTH = 4;
 
 function startMeter() {
   if (meterRaf) return;
 
   const freqData = new Uint8Array(analyser.frequencyBinCount);
 
-  // Frequency range: shifted upward to emphasize mids and highs
   const minFreq = 600;
   const maxFreq = 16000;
   const nyquist = audioCtx.sampleRate / 2;
   const binCount = analyser.frequencyBinCount;
 
-  // Precompute logarithmic sample positions
   const sampleBins = [];
   for (let i = 0; i < METER_POINTS; i++) {
     const frac = i / (METER_POINTS - 1);
@@ -590,7 +762,7 @@ function startMeter() {
 
     sampleBins.push([loBin, Math.max(hiBin, loBin + 1), tilt]);
   }
-    // Initialize the reactive logo's frequency bands
+
   initLogoBands();
 
   const displayValues = new Float32Array(METER_POINTS);
@@ -618,7 +790,6 @@ function startMeter() {
     meterCtx.lineJoin = 'round';
     meterCtx.lineCap = 'round';
 
-    // Compute smoothed values for every sample point
     for (let i = 0; i < METER_POINTS; i++) {
       const [loBin, hiBin, tilt] = sampleBins[i];
 
@@ -635,15 +806,13 @@ function startMeter() {
       const factor = target > prev ? ATTACK : RELEASE;
       displayValues[i] = prev + (target - prev) * factor;
     }
-    
-// Anchor a few points at each end for a calmer lead-in
+
     const ANCHOR = 3;
     for (let i = 0; i < ANCHOR; i++) {
       displayValues[i] = 0;
       displayValues[METER_POINTS - 1 - i] = 0;
     }
 
-            // Compute the zigzag points first
     const points = [];
     for (let i = 0; i < METER_POINTS; i++) {
       const x = (i / (METER_POINTS - 1)) * w;
@@ -652,12 +821,9 @@ function startMeter() {
       points.push({ x, y });
     }
 
-    // Draw a smooth curve through all points using Catmull-Rom → Bezier
     meterCtx.beginPath();
     meterCtx.moveTo(points[0].x, points[0].y);
 
-    // How curvy the corners are. 0 = straight lines (original),
-    // 1 = fully rounded. 0.5 is a gentle roundness.
     const CURVINESS = 0.9;
 
     for (let i = 0; i < points.length - 1; i++) {
@@ -693,42 +859,49 @@ function stopMeter() {
   }
   meterCtx.clearRect(0, 0, meterCanvas.width, meterCanvas.height);
 }
+
 // ═══════════════════════════════════════════════════════════════════
 // Reactive logo — color from vocals, scale from bass
 // ═══════════════════════════════════════════════════════════════════
 
-// Frequency bands
-const VOCAL_MIN_HZ = 300;
-const VOCAL_MAX_HZ = 3000;
-const BASS_MIN_HZ = 40;
-const BASS_MAX_HZ = 160;
+const LOGO_DEFAULTS = {
+  VOCAL_MIN_HZ:   300,
+  VOCAL_MAX_HZ:   3000,
+  VOCAL_FLOOR:    0.01,
+  VOCAL_CEILING:  0.20,
+  COLOR_RELEASE:  0.15,
 
-// Vocal input range mapped to the color output.
-const VOCAL_FLOOR = 0.01;
-const VOCAL_CEILING = 0.20;
+  BASS_MIN_HZ:    40,
+  BASS_MAX_HZ:    160,
+  BASS_FLOOR:     0.10,
+  BASS_CEILING:   0.85,
+  SCALE_RANGE:    0.25,
+  SCALE_RELEASE:  0.15,
+};
 
-// Bass input range mapped to the scale output.
-const BASS_FLOOR = 0.10;
-const BASS_CEILING = 0.85;
+const settings = Object.assign({}, LOGO_DEFAULTS);
 
-// How big the scale can grow at full bass.
-const BASS_SCALE_RANGE = 0.25;
-
-// Color gradient — the logo interpolates through these stops
-// as the vocal level goes from 0 to 1.
 const LOGO_COLORS = [
-  [240, 176,  32],  // amber
-  [224,  85,  85],  // warm coral
-  [192,  96, 208],  // magenta
-  [ 64, 208, 240],  // cyan
+  [240, 176,  32],
+  [224,  85,  85],
+  [192,  96, 208],
+  [ 64, 208, 240],
 ];
 
-// Decay rates. Attack = 1.0 means instant snap.
 const LOGO_ATTACK = 1.0;
-const LOGO_RELEASE = 0.15;
 
 let vocalBinRange = null;
 let bassBinRange = null;
+let logoColorValue = 0;
+let logoScaleValue = 0;
+
+const dbgVocal = document.getElementById('dbgVocal');
+const dbgBass = document.getElementById('dbgBass');
+const dbgVocalMapped = document.getElementById('dbgVocalMapped');
+const dbgBassMapped = document.getElementById('dbgBassMapped');
+const dbgColorValue = document.getElementById('dbgColorValue');
+const dbgScaleValue = document.getElementById('dbgScaleValue');
+const dbgColorSwatch = document.getElementById('dbgColorSwatch');
 
 function hzToBin(hz) {
   const nyquist = audioCtx.sampleRate / 2;
@@ -737,8 +910,8 @@ function hzToBin(hz) {
 }
 
 function initLogoBands() {
-  vocalBinRange = [hzToBin(VOCAL_MIN_HZ), hzToBin(VOCAL_MAX_HZ)];
-  bassBinRange = [hzToBin(BASS_MIN_HZ), hzToBin(BASS_MAX_HZ)];
+  vocalBinRange = [hzToBin(settings.VOCAL_MIN_HZ), hzToBin(settings.VOCAL_MAX_HZ)];
+  bassBinRange  = [hzToBin(settings.BASS_MIN_HZ),  hzToBin(settings.BASS_MAX_HZ)];
 }
 
 function averageBins(freqData, lo, hi) {
@@ -749,19 +922,12 @@ function averageBins(freqData, lo, hi) {
   return sum / (hi - lo + 1) / 255;
 }
 
-
-let logoColorValue = 0;
-let logoScaleValue = 0;
-
-// Maps an input level through a floor/ceiling range, clamped to 0..1.
 function remap(level, floor, ceiling) {
   if (level <= floor) return 0;
   if (level >= ceiling) return 1;
   return (level - floor) / (ceiling - floor);
 }
 
-// Interpolates through a list of RGB color stops.
-// amount = 0 → first color, amount = 1 → last color.
 function colorAt(amount) {
   const clamped = Math.max(0, Math.min(1, amount));
   const segments = LOGO_COLORS.length - 1;
@@ -783,30 +949,30 @@ function updateLogo(freqData) {
   if (!vocalBinRange || !bassBinRange) return;
 
   const vocalLevel = averageBins(freqData, vocalBinRange[0], vocalBinRange[1]);
-  const bassLevel = averageBins(freqData, bassBinRange[0], bassBinRange[1]);
+  const bassLevel  = averageBins(freqData, bassBinRange[0],  bassBinRange[1]);
 
-  // Debug log — remove once tuning is settled
-  if (Math.random() < 0.02) {
-    console.log(`vocal=${vocalLevel.toFixed(3)} bass=${bassLevel.toFixed(3)}`);
-  }
+  const colorTarget = remap(vocalLevel, settings.VOCAL_FLOOR, settings.VOCAL_CEILING);
+  const scaleTarget = remap(bassLevel,  settings.BASS_FLOOR,  settings.BASS_CEILING);
 
-  const colorTarget = remap(vocalLevel, VOCAL_FLOOR, VOCAL_CEILING);
-  const scaleTarget = remap(bassLevel, BASS_FLOOR, BASS_CEILING);
-
-  // Asymmetric smoothing: instant attack, gradual release.
   logoColorValue += (colorTarget - logoColorValue) *
-    (colorTarget > logoColorValue ? LOGO_ATTACK : LOGO_RELEASE);
+    (colorTarget > logoColorValue ? LOGO_ATTACK : settings.COLOR_RELEASE);
   logoScaleValue += (scaleTarget - logoScaleValue) *
-    (scaleTarget > logoScaleValue ? LOGO_ATTACK : LOGO_RELEASE);
+    (scaleTarget > logoScaleValue ? LOGO_ATTACK : settings.SCALE_RELEASE);
 
-  // Color
   const [r, g, b] = colorAt(logoColorValue);
   litoLogoReacts.forEach(el => el.setAttribute('stroke', `rgb(${r}, ${g}, ${b})`));
 
-  // Scale
-  const scale = 1 + logoScaleValue * BASS_SCALE_RANGE;
+  const scale = 1 + logoScaleValue * settings.SCALE_RANGE;
   litoLogo.style.transform = `scale(${scale})`;
   litoLogo.style.transformOrigin = 'center';
+
+  dbgVocal.textContent = vocalLevel.toFixed(3);
+  dbgBass.textContent = bassLevel.toFixed(3);
+  dbgVocalMapped.textContent = colorTarget.toFixed(3);
+  dbgBassMapped.textContent = scaleTarget.toFixed(3);
+  dbgColorValue.textContent = logoColorValue.toFixed(3);
+  dbgScaleValue.textContent = logoScaleValue.toFixed(3);
+  dbgColorSwatch.style.background = `rgb(${r}, ${g}, ${b})`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -839,12 +1005,58 @@ if (presetCode) {
   setIdleUi();
 }
 
-// Resize canvas to match device pixel ratio for crisp rendering
 (function setupCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const rect = meterCanvas.getBoundingClientRect();
   meterCanvas.width = rect.width * dpr;
   meterCanvas.height = rect.height * dpr;
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// Debug panel — live tuning
+// ═══════════════════════════════════════════════════════════════════
+
+(function setupDebugPanel() {
+  const toggle = document.getElementById('debugToggle');
+  const panel = document.getElementById('debugPanel');
+
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('open');
+  });
+
+  const sliders = [
+    ['sldVocalFloor',   'lblVocalFloor',   'VOCAL_FLOOR',   v => v.toFixed(3)],
+    ['sldVocalCeiling', 'lblVocalCeiling', 'VOCAL_CEILING', v => v.toFixed(3)],
+    ['sldColorRelease', 'lblColorRelease', 'COLOR_RELEASE', v => v.toFixed(2)],
+    ['sldBassFloor',    'lblBassFloor',    'BASS_FLOOR',    v => v.toFixed(3)],
+    ['sldBassCeiling',  'lblBassCeiling',  'BASS_CEILING',  v => v.toFixed(3)],
+    ['sldScaleRange',   'lblScaleRange',   'SCALE_RANGE',   v => v.toFixed(2)],
+    ['sldScaleRelease', 'lblScaleRelease', 'SCALE_RELEASE', v => v.toFixed(2)],
+  ];
+
+  for (const [sliderId, labelId, key, fmt] of sliders) {
+    const slider = document.getElementById(sliderId);
+    const label = document.getElementById(labelId);
+
+    slider.value = settings[key];
+    label.textContent = fmt(settings[key]);
+
+    slider.addEventListener('input', () => {
+      const value = parseFloat(slider.value);
+      settings[key] = value;
+      label.textContent = fmt(value);
+    });
+  }
+
+  document.getElementById('dbgReset').addEventListener('click', () => {
+    Object.assign(settings, LOGO_DEFAULTS);
+    for (const [sliderId, labelId, key, fmt] of sliders) {
+      const slider = document.getElementById(sliderId);
+      const label = document.getElementById(labelId);
+      slider.value = settings[key];
+      label.textContent = fmt(settings[key]);
+    }
+  });
 })();
 </script>
 
