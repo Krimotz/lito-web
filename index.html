@@ -701,7 +701,7 @@ function disconnect(closeSocket = true) {
   logoColorValue = 0;
   logoScaleValue = 0;
   logoPaths.style.transform = 'scale(1)';
-  litoLogoReacts.forEach(el => el.style.stroke = '#f0b020'');
+  litoLogoReacts.forEach(el => el.style.stroke = '#f0b020');
 
   try { audioCtx?.close(); } catch (_) {}
   audioCtx = null;
