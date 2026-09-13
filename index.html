@@ -31,7 +31,10 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
-
+  body.debug-open {
+    padding-right: 320px;
+    transition: padding-right 200ms ease;
+  }
     main {
     width: 100%;
     min-height: 100vh;
@@ -133,6 +136,11 @@
     background: var(--dim);
     display: none;
     flex-shrink: 0;
+  }
+    @media (max-width: 700px) {
+    body.debug-open {
+      padding-right: 0;
+    }
   }
 
   #heroStatus.live #statusDot {
@@ -1108,6 +1116,7 @@ window.addEventListener('resize', setupCanvas);
 
   toggle.addEventListener('click', () => {
     panel.classList.toggle('open');
+    document.body.classList.toggle('debug-open');
   });
 
   // ── Simple single-value sliders ────────────────────────────────
