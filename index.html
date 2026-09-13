@@ -704,19 +704,24 @@ const BASS_MIN_HZ = 40;
 const BASS_MAX_HZ = 160;
 
 // Vocal input range mapped to the color output.
-const VOCAL_FLOOR = 0.05;
-const VOCAL_CEILING = 0.35;
+const VOCAL_FLOOR = 0.01;
+const VOCAL_CEILING = 0.20;
 
 // Bass input range mapped to the scale output.
-const BASS_FLOOR = 0.15;
-const BASS_CEILING = 0.90;
+const BASS_FLOOR = 0.10;
+const BASS_CEILING = 0.85;
 
 // How big the scale can grow at full bass.
-const BASS_SCALE_RANGE = 0.20;
+const BASS_SCALE_RANGE = 0.25;
 
-// Colors. Quiet = amber. Loud = warm white.
-const LOGO_QUIET_COLOR = [240, 176,  32];
-const LOGO_LOUD_COLOR  = [255, 245, 220];
+// Color gradient — the logo interpolates through these stops
+// as the vocal level goes from 0 to 1.
+const LOGO_COLORS = [
+  [240, 176,  32],  // amber
+  [224,  85,  85],  // warm coral
+  [192,  96, 208],  // magenta
+  [ 64, 208, 240],  // cyan
+];
 
 // Decay rates. Attack = 1.0 means instant snap.
 const LOGO_ATTACK = 1.0;
@@ -754,13 +759,46 @@ function remap(level, floor, ceiling) {
   return (level - floor) / (ceiling - floor);
 }
 
+let logoColorValue = 0;
+let logoScaleValue = 0;
+
+// Maps an input level through a floor/ceiling range, clamped to 0..1.
+function remap(level, floor, ceiling) {
+  if (level <= floor) return 0;
+  if (level >= ceiling) return 1;
+  return (level - floor) / (ceiling - floor);
+}
+
+// Interpolates through a list of RGB color stops.
+// amount = 0 → first color, amount = 1 → last color.
+function colorAt(amount) {
+  const clamped = Math.max(0, Math.min(1, amount));
+  const segments = LOGO_COLORS.length - 1;
+  const scaled = clamped * segments;
+  const index = Math.min(Math.floor(scaled), segments - 1);
+  const t = scaled - index;
+
+  const a = LOGO_COLORS[index];
+  const b = LOGO_COLORS[index + 1];
+
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
 function updateLogo(freqData) {
   if (!vocalBinRange || !bassBinRange) return;
 
   const vocalLevel = averageBins(freqData, vocalBinRange[0], vocalBinRange[1]);
   const bassLevel = averageBins(freqData, bassBinRange[0], bassBinRange[1]);
 
-  // Remap through the floor/ceiling ranges
+  // Debug log — remove once tuning is settled
+  if (Math.random() < 0.02) {
+    console.log(`vocal=${vocalLevel.toFixed(3)} bass=${bassLevel.toFixed(3)}`);
+  }
+
   const colorTarget = remap(vocalLevel, VOCAL_FLOOR, VOCAL_CEILING);
   const scaleTarget = remap(bassLevel, BASS_FLOOR, BASS_CEILING);
 
@@ -771,9 +809,7 @@ function updateLogo(freqData) {
     (scaleTarget > logoScaleValue ? LOGO_ATTACK : LOGO_RELEASE);
 
   // Color
-  const r = Math.round(LOGO_QUIET_COLOR[0] + (LOGO_LOUD_COLOR[0] - LOGO_QUIET_COLOR[0]) * logoColorValue);
-  const g = Math.round(LOGO_QUIET_COLOR[1] + (LOGO_LOUD_COLOR[1] - LOGO_QUIET_COLOR[1]) * logoColorValue);
-  const b = Math.round(LOGO_QUIET_COLOR[2] + (LOGO_LOUD_COLOR[2] - LOGO_QUIET_COLOR[2]) * logoColorValue);
+  const [r, g, b] = colorAt(logoColorValue);
   litoLogoReacts.forEach(el => el.setAttribute('stroke', `rgb(${r}, ${g}, ${b})`));
 
   // Scale
