@@ -698,23 +698,21 @@ function stopMeter() {
 // ═══════════════════════════════════════════════════════════════════
 
 // Frequency bands
-const VOCAL_MIN_HZ = 1500;
-const VOCAL_MAX_HZ = 5000;
+const VOCAL_MIN_HZ = 300;
+const VOCAL_MAX_HZ = 3000;
 const BASS_MIN_HZ = 40;
 const BASS_MAX_HZ = 160;
 
 // Vocal input range mapped to the color output.
-// Bass levels below VOCAL_FLOOR leave the logo amber.
-// Bass levels above VOCAL_CEILING pin the logo at full color.
-const VOCAL_FLOOR = 0.08;
-const VOCAL_CEILING = 0.55;
+const VOCAL_FLOOR = 0.05;
+const VOCAL_CEILING = 0.35;
 
 // Bass input range mapped to the scale output.
-const BASS_FLOOR = 0.10;
-const BASS_CEILING = 0.65;
+const BASS_FLOOR = 0.15;
+const BASS_CEILING = 0.90;
 
 // How big the scale can grow at full bass.
-const BASS_SCALE_RANGE = 0.12;
+const BASS_SCALE_RANGE = 0.20;
 
 // Colors. Quiet = amber. Loud = warm white.
 const LOGO_QUIET_COLOR = [240, 176,  32];
