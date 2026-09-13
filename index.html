@@ -204,7 +204,42 @@
 <body>
 
 <main>
-  <header>LiTo</header>
+    <header>
+    <svg id="litoLogo"
+         viewBox="0 0 200 300"
+         width="40"
+         height="60"
+         xmlns="http://www.w3.org/2000/svg"
+         fill="none"
+         stroke="#f0b020"
+         stroke-width="8"
+         stroke-linejoin="round"
+         stroke-linecap="round">
+      <!-- Outer silhouette -->
+      <path class="logo-reacts" d="
+        M 100 15
+        L 60 90
+        L 10 150
+        L 20 260
+        L 40 285
+        L 160 285
+        L 180 260
+        L 190 150
+        L 140 90
+        Z
+      " />
+      <!-- Crown facets -->
+      <path class="logo-reacts" d="M 60 90 L 100 130 L 140 90" />
+      <path class="logo-reacts" d="M 100 15 L 100 130" />
+      <!-- Horizontal divider between crown and body -->
+      <path class="logo-reacts" d="M 25 170 L 175 170" />
+      <!-- Facet line inside the body (the diagonal band) -->
+      <path class="logo-reacts" d="M 22 215 L 178 195" />
+      <!-- Base facets -->
+      <path class="logo-reacts" d="M 100 240 L 60 285" />
+      <path class="logo-reacts" d="M 100 240 L 140 285" />
+    </svg>
+  </header>
 
   <div class="hero">
     <div id="heroCode" class="hero-code">____</div>
@@ -272,6 +307,8 @@ const meterCtx = meterCanvas.getContext('2d');
 const roomInput = document.getElementById('room');
 const toggleBtn = document.getElementById('toggleBtn');
 const tapOverlay = document.getElementById('tapOverlay');
+const litoLogo = document.getElementById('litoLogo');
+const litoLogoReacts = litoLogo.querySelectorAll('.logo-reacts');
 
 // ═══════════════════════════════════════════════════════════════════
 // Room ID helpers
@@ -474,6 +511,7 @@ function disconnect(closeSocket = true) {
   ws = null;
 
   stopMeter();
+  
   try { audioCtx?.close(); } catch (_) {}
   audioCtx = null;
   analyser = null;
@@ -568,6 +606,8 @@ function startMeter() {
 
     sampleBins.push([loBin, Math.max(hiBin, loBin + 1), tilt]);
   }
+    // Initialize the reactive logo's frequency bands
+  initLogoBands();
 
   const displayValues = new Float32Array(METER_POINTS);
 
@@ -579,6 +619,7 @@ function startMeter() {
     if (!analyser) return;
 
     analyser.getByteFrequencyData(freqData);
+    updateLogo(freqData);
 
     const w = meterCanvas.width;
     const h = meterCanvas.height;
@@ -667,6 +708,66 @@ function stopMeter() {
     meterRaf = null;
   }
   meterCtx.clearRect(0, 0, meterCanvas.width, meterCanvas.height);
+}
+// ═══════════════════════════════════════════════════════════════════
+// Reactive logo — color from vocals, scale from bass
+// ═══════════════════════════════════════════════════════════════════
+
+// Frequency bands
+const VOCAL_MIN_HZ = 1000;
+const VOCAL_MAX_HZ = 4000;
+const BASS_MIN_HZ = 60;
+const BASS_MAX_HZ = 200;
+
+// Sensitivity
+const VOCAL_SENSITIVITY = 2.2;
+const BASS_SCALE_RANGE = 0.08;
+
+// Colors. Quiet = amber (the logo's resting state).
+// Loud = near-white, brightening with vocal hits.
+const LOGO_QUIET_COLOR = [240, 176,  32];
+const LOGO_LOUD_COLOR  = [240, 240, 240];
+
+let vocalBinRange = null;
+let bassBinRange = null;
+
+function hzToBin(hz) {
+  const nyquist = audioCtx.sampleRate / 2;
+  const bin = Math.floor(hz / nyquist * analyser.frequencyBinCount);
+  return Math.max(0, Math.min(analyser.frequencyBinCount - 1, bin));
+}
+
+function initLogoBands() {
+  vocalBinRange = [hzToBin(VOCAL_MIN_HZ), hzToBin(VOCAL_MAX_HZ)];
+  bassBinRange = [hzToBin(BASS_MIN_HZ), hzToBin(BASS_MAX_HZ)];
+}
+
+function averageBins(freqData, lo, hi) {
+  let sum = 0;
+  for (let b = lo; b <= hi; b++) {
+    sum += freqData[b];
+  }
+  return sum / (hi - lo + 1) / 255;
+}
+
+function updateLogo(freqData) {
+  if (!vocalBinRange || !bassBinRange) return;
+
+  const vocalLevel = averageBins(freqData, vocalBinRange[0], vocalBinRange[1]);
+  const bassLevel = averageBins(freqData, bassBinRange[0], bassBinRange[1]);
+
+  // Color
+  const colorAmount = Math.min(1, vocalLevel * VOCAL_SENSITIVITY);
+  const r = Math.round(LOGO_QUIET_COLOR[0] + (LOGO_LOUD_COLOR[0] - LOGO_QUIET_COLOR[0]) * colorAmount);
+  const g = Math.round(LOGO_QUIET_COLOR[1] + (LOGO_LOUD_COLOR[1] - LOGO_QUIET_COLOR[1]) * colorAmount);
+  const b = Math.round(LOGO_QUIET_COLOR[2] + (LOGO_LOUD_COLOR[2] - LOGO_QUIET_COLOR[2]) * colorAmount);
+  litoLogoReacts.forEach(el => el.setAttribute('stroke', `rgb(${r}, ${g}, ${b})`));
+
+  // Scale
+  const scaleAmount = Math.min(1, bassLevel * 1.8);
+  const scale = 1 + scaleAmount * BASS_SCALE_RANGE;
+  litoLogo.style.transform = `scale(${scale})`;
+  litoLogo.style.transformOrigin = 'center';
 }
 
 // ═══════════════════════════════════════════════════════════════════
