@@ -26,7 +26,7 @@
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-family: 'Bahnschrift', 'DIN Alternate', 'Oswald', 'Anton', ui-monospace, sans-serif;
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -38,54 +38,71 @@
 
   main {
     width: 100%;
-    max-width: 380px;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  header {
-    text-align: center;
-  }
-
-  .hero {
-    text-align: center;
-    min-height: 140px;
+    max-width: 340px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 1.5rem;
+  }
+
+  .logo-wrap {
+    width: 100%;
+    display: flex;
     justify-content: center;
-    gap: 0.75rem;
+    align-items: center;
   }
 
-  .hero-code {
-    font-size: 44px;
-    letter-spacing: 0.2em;
-    color: var(--accent);
-    line-height: 1;
+  #litoLogo {
+    width: 220px;
+    height: 314px;
+    display: block;
   }
 
-  .hero-label {
+  /* Hero text lives inside the SVG */
+  #litoLogo text {
+    font-family: 'Bahnschrift', 'DIN Alternate', 'Oswald', 'Anton', ui-monospace, sans-serif;
+    font-weight: 700;
+  }
+
+  #heroCode {
+    font-size: 42px;
+    letter-spacing: 0.08em;
+    fill: var(--accent);
+  }
+
+  #heroLabel {
     font-size: 12px;
     letter-spacing: 0.15em;
-    color: var(--dim);
+    fill: var(--dim);
+    font-weight: 400;
     text-transform: uppercase;
   }
 
-  .hero-status {
-    font-size: 13px;
-    color: var(--dim);
-    min-height: 1.2em;
+  #heroStatus {
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    fill: var(--dim);
+    font-weight: 400;
+    text-transform: uppercase;
   }
 
-  .hero-status.error { color: var(--error); }
-
-  .hero-status.live {
-    color: var(--accent);
+  #heroStatus.live {
+    fill: var(--accent);
   }
 
-  .hero-status.live::before {
-    content: "● ";
+  #heroStatus.error {
+    fill: var(--error);
+  }
+
+  /* The status dot, drawn as a small circle inside the SVG */
+  #statusDot {
+    fill: var(--dim);
+    opacity: 0;
+  }
+
+  #statusDot.live {
+    fill: var(--accent);
+    opacity: 1;
     animation: pulse 1.5s infinite;
   }
 
@@ -100,17 +117,22 @@
     display: block;
   }
 
+  /* The meter is hidden while idle; visible when connected */
+  .idle #meter {
+    display: none;
+  }
+
   input#room {
     width: 100%;
     background: transparent;
     border: 1px solid var(--line);
     color: var(--fg);
-    font: inherit;
+    font-family: 'Bahnschrift', 'DIN Alternate', 'Oswald', ui-monospace, sans-serif;
     font-size: 20px;
     letter-spacing: 0.2em;
     text-align: center;
     padding: 0.75rem;
-    text-transform: lowercase;
+    text-transform: uppercase;
   }
 
   input#room:focus {
@@ -125,6 +147,12 @@
 
   input#room:disabled {
     opacity: 0.4;
+    display: none;
+  }
+
+  /* Input hidden when connected */
+  .connected input#room {
+    display: none;
   }
 
   button {
@@ -132,8 +160,8 @@
     background: transparent;
     border: 1px solid var(--fg);
     color: var(--fg);
-    font: inherit;
-    font-size: 13px;
+    font-family: 'Bahnschrift', 'DIN Alternate', 'Oswald', ui-monospace, sans-serif;
+    font-size: 18px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     padding: 0.9rem;
@@ -159,14 +187,6 @@
   button.stop:hover:not(:disabled) {
     background: var(--accent);
     color: var(--bg);
-  }
-
-  footer {
-    text-align: center;
-    font-size: 11px;
-    color: var(--dim);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
   }
 
   #tapOverlay {
@@ -196,10 +216,7 @@
     color: var(--fg);
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     Debug panel
-     ═══════════════════════════════════════════════════════════ */
-
+  /* Debug panel */
   #debugToggle {
     position: fixed;
     top: 12px;
@@ -231,7 +248,7 @@
     background: #141416;
     border-left: 1px solid var(--line);
     color: var(--fg);
-    font-family: inherit;
+    font-family: ui-monospace, monospace;
     font-size: 11px;
     overflow-y: auto;
     padding: 16px;
@@ -241,9 +258,7 @@
     box-sizing: border-box;
   }
 
-  #debugPanel.open {
-    transform: translateX(0);
-  }
+  #debugPanel.open { transform: translateX(0); }
 
   #debugPanel h2 {
     font-size: 11px;
@@ -260,9 +275,7 @@
     border-bottom: 1px solid var(--line);
   }
 
-  #debugPanel section:last-child {
-    border-bottom: none;
-  }
+  #debugPanel section:last-child { border-bottom: none; }
 
   #debugPanel .readout {
     display: flex;
@@ -271,13 +284,9 @@
     font-variant-numeric: tabular-nums;
   }
 
-  #debugPanel .readout .value {
-    color: var(--accent);
-  }
+  #debugPanel .readout .value { color: var(--accent); }
 
-  #debugPanel .slider-row {
-    margin-bottom: 12px;
-  }
+  #debugPanel .slider-row { margin-bottom: 12px; }
 
   #debugPanel .slider-row label {
     display: flex;
@@ -327,15 +336,13 @@
 </head>
 <body>
 
-<main>
-  <header>
+<main id="app" class="idle">
+  <div class="logo-wrap">
     <svg id="litoLogo"
          viewBox="0 0 265 378"
-         width="40"
-         height="57"
          xmlns="http://www.w3.org/2000/svg"
-         style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
-      <g>
+         style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5; overflow:visible;">
+      <g id="logoPaths">
         <path class="logo-reacts"
               d="M14.722,325.203l48.952,48.045l135.977,0l58.47,-45.779l1.133,-181.416l-85.892,-137.224l-79.32,-4.079l-41.813,100.51l-47.479,65.382l9.972,154.561Z"
               style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
@@ -346,13 +353,15 @@
               d="M14.969,325.181l243.475,-58.927l-0.218,61.251l-59.332,45.744l-54.33,-79.433l-80.186,79.433l-49.409,-48.067Z"
               style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
       </g>
-    </svg>
-  </header>
 
-  <div class="hero">
-    <div id="heroCode" class="hero-code">____</div>
-    <div id="heroLabel" class="hero-label">room code</div>
-    <div id="heroStatus" class="hero-status">idle</div>
+      <!-- Hero text inside the gemstone -->
+      <text id="heroCode" x="132" y="195" text-anchor="middle">LITO</text>
+      <text id="heroLabel" x="132" y="222" text-anchor="middle">ROOM CODE</text>
+      <g id="statusRow">
+        <circle id="statusDot" cx="112" cy="245" r="4" />
+        <text id="heroStatus" x="132" y="249" text-anchor="middle">IDLE</text>
+      </g>
+    </svg>
   </div>
 
   <canvas id="meter" width="760" height="120"></canvas>
@@ -360,7 +369,7 @@
   <input
     id="room"
     type="text"
-    placeholder="a4f9"
+    placeholder="A4F9"
     autocomplete="off"
     autocapitalize="off"
     autocorrect="off"
@@ -369,8 +378,6 @@
   />
 
   <button id="toggleBtn">Listen</button>
-
-  <footer>listen together</footer>
 </main>
 
 <div id="tapOverlay">
@@ -439,12 +446,9 @@
 // ═══════════════════════════════════════════════════════════════════
 
 const SERVER_BASE = 'wss://lito-server.onrender.com';
-
 const SAMPLE_RATE = 44100;
 const CHANNELS = 2;
-
 const ROOM_PREFIX = 'lito';
-
 const AUTOCONNECT_DELAY_MS = 800;
 
 const COLD_START_MESSAGES = [
@@ -458,9 +462,11 @@ const COLD_START_MESSAGES = [
 // DOM references
 // ═══════════════════════════════════════════════════════════════════
 
+const app = document.getElementById('app');
 const heroCode = document.getElementById('heroCode');
 const heroLabel = document.getElementById('heroLabel');
 const heroStatus = document.getElementById('heroStatus');
+const statusDot = document.getElementById('statusDot');
 const meterCanvas = document.getElementById('meter');
 const meterCtx = meterCanvas.getContext('2d');
 const roomInput = document.getElementById('room');
@@ -516,18 +522,25 @@ function setHeroLabel(text) {
 }
 
 function setStatus(text, isError = false) {
-  heroStatus.textContent = text;
-  heroStatus.className = 'hero-status' +
-    (isError ? ' error' : '') +
-    (text === 'live' ? ' live' : '');
+  heroStatus.textContent = text.toUpperCase();
+  heroStatus.className = '';
+  statusDot.className = '';
+  if (isError) {
+    heroStatus.classList.add('error');
+  } else if (text.toLowerCase() === 'live') {
+    heroStatus.classList.add('live');
+    statusDot.classList.add('live');
+  }
 }
 
 function setIdleUi() {
   isConnected = false;
+  app.classList.add('idle');
+  app.classList.remove('connected');
   setHeroCode('____');
-  setHeroLabel('room code');
+  setHeroLabel('ROOM CODE');
   setStatus('idle');
-  toggleBtn.textContent = 'Listen';
+  toggleBtn.textContent = 'LISTEN';
   toggleBtn.classList.remove('stop');
   toggleBtn.disabled = false;
   roomInput.disabled = false;
@@ -535,9 +548,11 @@ function setIdleUi() {
 
 function setConnectedUi(code) {
   isConnected = true;
-  setHeroCode(code);
-  setHeroLabel('room');
-  toggleBtn.textContent = 'Stop';
+  app.classList.remove('idle');
+  app.classList.add('connected');
+  setHeroCode(code.toUpperCase());
+  setHeroLabel('ROOM CODE');
+  toggleBtn.textContent = 'STOP';
   toggleBtn.classList.add('stop');
   toggleBtn.disabled = false;
   roomInput.disabled = true;
@@ -585,10 +600,10 @@ function connect() {
     return;
   }
 
-  setHeroCode(code);
-  setHeroLabel('room');
+  setHeroCode(code.toUpperCase());
+  setHeroLabel('ROOM CODE');
   setStatus('connecting…');
-  toggleBtn.textContent = 'Cancel';
+  toggleBtn.textContent = 'CANCEL';
   toggleBtn.classList.remove('stop');
   roomInput.disabled = true;
 
@@ -620,7 +635,7 @@ function connect() {
           confirmed = true;
           stopColdStartMessages();
           setConnectedUi(code);
-          setStatus('waiting for audio…');
+          setStatus('waiting…');
           startMeter();
           checkAutoplay();
         } else if (msg.type === 'error') {
@@ -653,7 +668,7 @@ function connect() {
   ws.onclose = (event) => {
     stopColdStartMessages();
     if (!confirmed) {
-      setStatus(`could not connect: ${event.reason || 'unknown'}`, true);
+      setStatus(`could not connect`, true);
       setIdleUi();
     } else {
       disconnect(false);
@@ -959,7 +974,7 @@ function updateLogo(freqData) {
   logoScaleValue += (scaleTarget - logoScaleValue) *
     (scaleTarget > logoScaleValue ? LOGO_ATTACK : settings.SCALE_RELEASE);
 
-    const [r, g, b] = colorAt(logoColorValue);
+  const [r, g, b] = colorAt(logoColorValue);
   litoLogoReacts.forEach(el => el.style.stroke = `rgb(${r}, ${g}, ${b})`);
 
   const scale = 1 + logoScaleValue * settings.SCALE_RANGE;
@@ -997,8 +1012,8 @@ const presetCode = normalizeRoomCode(params.get('room'));
 
 if (presetCode) {
   roomInput.value = presetCode;
-  setHeroCode(presetCode);
-  setHeroLabel('room');
+  setHeroCode(presetCode.toUpperCase());
+  setHeroLabel('ROOM CODE');
   setStatus('connecting…');
   setTimeout(() => connect(), AUTOCONNECT_DELAY_MS);
 } else {
