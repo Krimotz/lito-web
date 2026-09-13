@@ -32,13 +32,15 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  main {
+    main {
     width: 100%;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     padding: 24px;
     gap: 24px;
+    align-items: center;
+    justify-content: center;
   }
 
   /* ── Corner logo ─────────────────────────────────────────── */
@@ -70,14 +72,14 @@
 
   /* ── Center block ────────────────────────────────────────── */
 
-  .center {
-    flex: 1;
+    .center {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0;
     padding: 32px 0;
+    width: 100%;
   }
 
   #heroCode {
@@ -386,7 +388,7 @@
          viewBox="0 0 265 378"
          xmlns="http://www.w3.org/2000/svg"
          style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5; overflow:visible;">
-      <g id="logoPaths">
+            <g id="logoPaths">
         <path class="logo-reacts"
               d="M14.722,325.203l48.952,48.045l135.977,0l58.47,-45.779l1.133,-181.416l-85.892,-137.224l-79.32,-4.079l-41.813,100.51l-47.479,65.382l9.972,154.561Z"
               style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
@@ -396,8 +398,9 @@
         <path class="logo-reacts"
               d="M14.969,325.181l243.475,-58.927l-0.218,61.251l-59.332,45.744l-54.33,-79.433l-80.186,79.433l-49.409,-48.067Z"
               style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
+        <text id="logoWordmark" x="132" y="215" text-anchor="middle">LiTo</text>
       </g>
-      <text id="logoWordmark" x="132" y="200" text-anchor="middle">LITO</text>
+      <text id="logoWordmark" x="132" y="200" text-anchor="middle">LiTo</text>
     </svg>
   </div>
 
