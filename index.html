@@ -959,8 +959,8 @@ function updateLogo(freqData) {
   logoScaleValue += (scaleTarget - logoScaleValue) *
     (scaleTarget > logoScaleValue ? LOGO_ATTACK : settings.SCALE_RELEASE);
 
-  const [r, g, b] = colorAt(logoColorValue);
-  litoLogoReacts.forEach(el => el.setAttribute('stroke', `rgb(${r}, ${g}, ${b})`));
+    const [r, g, b] = colorAt(logoColorValue);
+  litoLogoReacts.forEach(el => el.style.stroke = `rgb(${r}, ${g}, ${b})`);
 
   const scale = 1 + logoScaleValue * settings.SCALE_RANGE;
   litoLogo.style.transform = `scale(${scale})`;
