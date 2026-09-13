@@ -204,40 +204,24 @@
 <body>
 
 <main>
-    <header>
+  <header>
     <svg id="litoLogo"
-         viewBox="0 0 200 300"
+         viewBox="0 0 265 378"
          width="40"
-         height="60"
+         height="57"
          xmlns="http://www.w3.org/2000/svg"
-         fill="none"
-         stroke="#f0b020"
-         stroke-width="8"
-         stroke-linejoin="round"
-         stroke-linecap="round">
-      <!-- Outer silhouette -->
-      <path class="logo-reacts" d="
-        M 100 15
-        L 60 90
-        L 10 150
-        L 20 260
-        L 40 285
-        L 160 285
-        L 180 260
-        L 190 150
-        L 140 90
-        Z
-      " />
-      <!-- Crown facets -->
-      <path class="logo-reacts" d="M 60 90 L 100 130 L 140 90" />
-      <path class="logo-reacts" d="M 100 15 L 100 130" />
-      <!-- Horizontal divider between crown and body -->
-      <path class="logo-reacts" d="M 25 170 L 175 170" />
-      <!-- Facet line inside the body (the diagonal band) -->
-      <path class="logo-reacts" d="M 22 215 L 178 195" />
-      <!-- Base facets -->
-      <path class="logo-reacts" d="M 100 240 L 60 285" />
-      <path class="logo-reacts" d="M 100 240 L 140 285" />
+         style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
+      <g>
+        <path class="logo-reacts"
+              d="M14.722,325.203l48.952,48.045l135.977,0l58.47,-45.779l1.133,-181.416l-85.892,-137.224l-79.32,-4.079l-41.813,100.51l-47.479,65.382l9.972,154.561Z"
+              style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
+        <path class="logo-reacts"
+              d="M4.75,171.193l137.854,-14.051l-88.065,-54.844l39.433,-97.548l48.632,65.82l0,86.572l116.65,-10.887l-85.672,-136.284l-30.978,60.599"
+              style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
+        <path class="logo-reacts"
+              d="M14.969,325.181l243.475,-58.927l-0.218,61.251l-59.332,45.744l-54.33,-79.433l-80.186,79.433l-49.409,-48.067Z"
+              style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
+      </g>
     </svg>
   </header>
 
@@ -714,19 +698,25 @@ function stopMeter() {
 // ═══════════════════════════════════════════════════════════════════
 
 // Frequency bands
-const VOCAL_MIN_HZ = 1000;
-const VOCAL_MAX_HZ = 4000;
-const BASS_MIN_HZ = 60;
-const BASS_MAX_HZ = 200;
+const VOCAL_MIN_HZ = 1500;
+const VOCAL_MAX_HZ = 5000;
+const BASS_MIN_HZ = 40;
+const BASS_MAX_HZ = 160;
 
-// Sensitivity
-const VOCAL_SENSITIVITY = 2.2;
-const BASS_SCALE_RANGE = 0.08;
+// Sensitivity. Lower values = less likely to pin at max.
+const VOCAL_SENSITIVITY = 0.9;
+const BASS_SENSITIVITY = 1.2;
 
-// Colors. Quiet = amber (the logo's resting state).
-// Loud = near-white, brightening with vocal hits.
+// How big the scale can grow at full bass.
+const BASS_SCALE_RANGE = 0.06;
+
+// Colors. Quiet = amber. Loud = warm white.
 const LOGO_QUIET_COLOR = [240, 176,  32];
-const LOGO_LOUD_COLOR  = [240, 240, 240];
+const LOGO_LOUD_COLOR  = [255, 245, 220];
+
+// Decay rates. Higher = snappier response, lower = longer tail.
+const LOGO_ATTACK = 1.0;   // 1.0 = instant snap to louder values
+const LOGO_RELEASE = 0.15; // lower = slower fade back to amber
 
 let vocalBinRange = null;
 let bassBinRange = null;
@@ -750,22 +740,33 @@ function averageBins(freqData, lo, hi) {
   return sum / (hi - lo + 1) / 255;
 }
 
+let logoColorValue = 0;
+let logoScaleValue = 0;
+
 function updateLogo(freqData) {
   if (!vocalBinRange || !bassBinRange) return;
 
   const vocalLevel = averageBins(freqData, vocalBinRange[0], vocalBinRange[1]);
   const bassLevel = averageBins(freqData, bassBinRange[0], bassBinRange[1]);
 
+  // Targets, clamped to 0..1
+  const colorTarget = Math.min(1, vocalLevel * VOCAL_SENSITIVITY);
+  const scaleTarget = Math.min(1, bassLevel * BASS_SENSITIVITY);
+
+  // Asymmetric smoothing: instant attack, gradual release.
+  logoColorValue += (colorTarget - logoColorValue) *
+    (colorTarget > logoColorValue ? LOGO_ATTACK : LOGO_RELEASE);
+  logoScaleValue += (scaleTarget - logoScaleValue) *
+    (scaleTarget > logoScaleValue ? LOGO_ATTACK : LOGO_RELEASE);
+
   // Color
-  const colorAmount = Math.min(1, vocalLevel * VOCAL_SENSITIVITY);
-  const r = Math.round(LOGO_QUIET_COLOR[0] + (LOGO_LOUD_COLOR[0] - LOGO_QUIET_COLOR[0]) * colorAmount);
-  const g = Math.round(LOGO_QUIET_COLOR[1] + (LOGO_LOUD_COLOR[1] - LOGO_QUIET_COLOR[1]) * colorAmount);
-  const b = Math.round(LOGO_QUIET_COLOR[2] + (LOGO_LOUD_COLOR[2] - LOGO_QUIET_COLOR[2]) * colorAmount);
+  const r = Math.round(LOGO_QUIET_COLOR[0] + (LOGO_LOUD_COLOR[0] - LOGO_QUIET_COLOR[0]) * logoColorValue);
+  const g = Math.round(LOGO_QUIET_COLOR[1] + (LOGO_LOUD_COLOR[1] - LOGO_QUIET_COLOR[1]) * logoColorValue);
+  const b = Math.round(LOGO_QUIET_COLOR[2] + (LOGO_LOUD_COLOR[2] - LOGO_QUIET_COLOR[2]) * logoColorValue);
   litoLogoReacts.forEach(el => el.setAttribute('stroke', `rgb(${r}, ${g}, ${b})`));
 
   // Scale
-  const scaleAmount = Math.min(1, bassLevel * 1.8);
-  const scale = 1 + scaleAmount * BASS_SCALE_RANGE;
+  const scale = 1 + logoScaleValue * BASS_SCALE_RANGE;
   litoLogo.style.transform = `scale(${scale})`;
   litoLogo.style.transformOrigin = 'center';
 }
