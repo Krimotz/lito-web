@@ -749,15 +749,6 @@ function averageBins(freqData, lo, hi) {
   return sum / (hi - lo + 1) / 255;
 }
 
-let logoColorValue = 0;
-let logoScaleValue = 0;
-
-// Maps an input level through a floor/ceiling range, clamped to 0..1.
-function remap(level, floor, ceiling) {
-  if (level <= floor) return 0;
-  if (level >= ceiling) return 1;
-  return (level - floor) / (ceiling - floor);
-}
 
 let logoColorValue = 0;
 let logoScaleValue = 0;
