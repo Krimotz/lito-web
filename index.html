@@ -28,85 +28,114 @@
     color: var(--fg);
     font-family: 'Bahnschrift', 'DIN Alternate', 'Oswald', 'Anton', ui-monospace, sans-serif;
     font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     min-height: 100vh;
-    padding: 2rem;
     -webkit-font-smoothing: antialiased;
   }
 
   main {
     width: 100%;
-    max-width: 340px;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
+    padding: 24px;
+    gap: 24px;
   }
 
-  .logo-wrap {
-    width: 100%;
-    height: 520px;
+  /* ── Corner logo ─────────────────────────────────────────── */
+
+  .corner {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-end;
+    align-items: flex-start;
     flex-shrink: 0;
-    overflow: visible;
   }
 
   #litoLogo {
-    width: 220px;
-    height: 314px;
+    width: 80px;
+    height: 114px;
     display: block;
     overflow: visible;
   }
 
-  /* Hero text lives inside the SVG */
   #litoLogo text {
     font-family: 'Bahnschrift', 'DIN Alternate', 'Oswald', 'Anton', ui-monospace, sans-serif;
     font-weight: 700;
   }
 
-  #heroCode {
+  #logoWordmark {
     font-size: 42px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.02em;
     fill: var(--accent);
+  }
+
+  /* ── Center block ────────────────────────────────────────── */
+
+  .center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 32px 0;
+  }
+
+  #heroCode {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    line-height: 1;
+    text-transform: uppercase;
+    text-align: center;
+    word-break: break-all;
+    max-width: 100%;
   }
 
   #heroLabel {
-    font-size: 12px;
-    letter-spacing: 0.15em;
-    fill: var(--dim);
+    font-size: 14px;
     font-weight: 400;
+    letter-spacing: 0.15em;
+    color: var(--dim);
     text-transform: uppercase;
+    margin-top: 8px;
+    text-align: center;
   }
 
   #heroStatus {
-    font-size: 12px;
-    letter-spacing: 0.15em;
-    fill: var(--dim);
+    font-size: 14px;
     font-weight: 400;
+    letter-spacing: 0.15em;
+    color: var(--dim);
     text-transform: uppercase;
+    margin-top: 4px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
 
   #heroStatus.live {
-    fill: var(--accent);
+    color: var(--accent);
   }
 
   #heroStatus.error {
-    fill: var(--error);
+    color: var(--error);
   }
 
-  /* The status dot, drawn as a small circle inside the SVG */
   #statusDot {
-    fill: var(--dim);
-    opacity: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dim);
+    display: none;
+    flex-shrink: 0;
   }
 
-  #statusDot.live {
-    fill: var(--accent);
-    opacity: 1;
+  #heroStatus.live #statusDot {
+    display: block;
+    background: var(--accent);
     animation: pulse 1.5s infinite;
   }
 
@@ -115,16 +144,27 @@
     50% { opacity: 0.3; }
   }
 
+  /* ── Bottom: meter / input + button ──────────────────────── */
+
+  .bottom {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
   canvas#meter {
     width: 100%;
-    height: 60px;
-    min-height: 60px;
+    height: 80px;
+    min-height: 80px;
     display: block;
     flex-shrink: 0;
   }
 
-  /* The meter is hidden while idle; visible when connected */
-  .idle #meter {
+  .idle canvas#meter {
     display: none;
   }
 
@@ -137,7 +177,7 @@
     font-size: 20px;
     letter-spacing: 0.2em;
     text-align: center;
-    padding: 0.75rem;
+    padding: 1rem;
     text-transform: uppercase;
   }
 
@@ -151,12 +191,6 @@
     letter-spacing: 0.2em;
   }
 
-  input#room:disabled {
-    opacity: 0.4;
-    display: none;
-  }
-
-  /* Input hidden when connected */
   .connected input#room {
     display: none;
   }
@@ -170,7 +204,7 @@
     font-size: 18px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    padding: 0.9rem;
+    padding: 1rem;
     cursor: pointer;
     transition: background 120ms, color 120ms, border-color 120ms;
   }
@@ -194,6 +228,8 @@
     background: var(--accent);
     color: var(--bg);
   }
+
+  /* ── Tap overlay ─────────────────────────────────────────── */
 
   #tapOverlay {
     position: fixed;
@@ -222,10 +258,11 @@
     color: var(--fg);
   }
 
-  /* Debug panel */
+  /* ── Debug panel ─────────────────────────────────────────── */
+
   #debugToggle {
     position: fixed;
-    top: 12px;
+    bottom: 12px;
     right: 12px;
     width: 36px;
     height: 36px;
@@ -343,7 +380,8 @@
 <body>
 
 <main id="app" class="idle">
-  <div class="logo-wrap">
+
+  <div class="corner">
     <svg id="litoLogo"
          viewBox="0 0 265 378"
          xmlns="http://www.w3.org/2000/svg"
@@ -359,31 +397,31 @@
               d="M14.969,325.181l243.475,-58.927l-0.218,61.251l-59.332,45.744l-54.33,-79.433l-80.186,79.433l-49.409,-48.067Z"
               style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
       </g>
-
-      <!-- Hero text inside the gemstone -->
-      <text id="heroCode" x="132" y="215" text-anchor="middle">LITO</text>
-      <text id="heroLabel" x="132" y="242" text-anchor="middle">ROOM CODE</text>
-      <g id="statusRow">
-                <circle id="statusDot" cx="98" cy="265" r="4" />
-        <text id="heroStatus" x="136" y="269" text-anchor="middle">IDLE</text>
-      </g>
+      <text id="logoWordmark" x="132" y="200" text-anchor="middle">LITO</text>
     </svg>
   </div>
 
-  <canvas id="meter" width="760" height="120"></canvas>
+  <div class="center">
+    <div id="heroCode">LITO</div>
+    <div id="heroLabel">ROOM CODE</div>
+    <div id="heroStatus"><span id="statusDot"></span><span id="heroStatusText">IDLE</span></div>
+  </div>
 
-  <input
-    id="room"
-    type="text"
-    placeholder="A4F9"
-    autocomplete="off"
-    autocapitalize="off"
-    autocorrect="off"
-    spellcheck="false"
-    maxlength="12"
-  />
+  <div class="bottom">
+    <canvas id="meter" width="760" height="160"></canvas>
+    <input
+      id="room"
+      type="text"
+      placeholder="A4F9"
+      autocomplete="off"
+      autocapitalize="off"
+      autocorrect="off"
+      spellcheck="false"
+      maxlength="12"
+    />
+    <button id="toggleBtn">Listen</button>
+  </div>
 
-  <button id="toggleBtn">Listen</button>
 </main>
 
 <div id="tapOverlay">
@@ -472,6 +510,7 @@ const app = document.getElementById('app');
 const heroCode = document.getElementById('heroCode');
 const heroLabel = document.getElementById('heroLabel');
 const heroStatus = document.getElementById('heroStatus');
+const heroStatusText = document.getElementById('heroStatusText');
 const statusDot = document.getElementById('statusDot');
 const meterCanvas = document.getElementById('meter');
 const meterCtx = meterCanvas.getContext('2d');
@@ -529,19 +568,12 @@ function setHeroLabel(text) {
 }
 
 function setStatus(text, isError = false) {
-  heroStatus.textContent = text.toUpperCase();
+  heroStatusText.textContent = text.toUpperCase();
   heroStatus.className = '';
-  statusDot.className = '';
-
-  // Reset fill to default explicitly — some browsers cache the previous value
-  heroStatus.style.fill = '';
-  statusDot.style.fill = '';
-
   if (isError) {
     heroStatus.classList.add('error');
   } else if (text.toLowerCase() === 'live') {
     heroStatus.classList.add('live');
-    statusDot.classList.add('live');
   }
 }
 
@@ -697,7 +729,6 @@ function disconnect(closeSocket = true) {
 
   stopMeter();
 
-  // Reset the logo's reactive state so it returns to its resting size and color
   logoColorValue = 0;
   logoScaleValue = 0;
   logoPaths.style.transform = 'scale(1)';
@@ -999,7 +1030,7 @@ function updateLogo(freqData) {
 
   const scale = 1 + logoScaleValue * settings.SCALE_RANGE;
   logoPaths.style.transform = `scale(${scale})`;
-  logoPaths.style.transformOrigin = 'center';
+  logoPaths.style.transformOrigin = 'top right';
 
   dbgVocal.textContent = vocalLevel.toFixed(3);
   dbgBass.textContent = bassLevel.toFixed(3);
@@ -1043,7 +1074,7 @@ if (presetCode) {
 function setupCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const rect = meterCanvas.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) return; // not visible yet
+  if (rect.width === 0 || rect.height === 0) return;
   meterCanvas.width = rect.width * dpr;
   meterCanvas.height = rect.height * dpr;
 }
