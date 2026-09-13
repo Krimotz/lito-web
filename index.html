@@ -47,7 +47,7 @@
 
   .logo-wrap {
     width: 100%;
-    height: 340px;
+    height: 520px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -364,8 +364,8 @@
       <text id="heroCode" x="132" y="215" text-anchor="middle">LITO</text>
       <text id="heroLabel" x="132" y="242" text-anchor="middle">ROOM CODE</text>
       <g id="statusRow">
-        <circle id="statusDot" cx="112" cy="265" r="4" />
-        <text id="heroStatus" x="132" y="269" text-anchor="middle">IDLE</text>
+                <circle id="statusDot" cx="98" cy="265" r="4" />
+        <text id="heroStatus" x="136" y="269" text-anchor="middle">IDLE</text>
       </g>
     </svg>
   </div>
@@ -532,6 +532,11 @@ function setStatus(text, isError = false) {
   heroStatus.textContent = text.toUpperCase();
   heroStatus.className = '';
   statusDot.className = '';
+
+  // Reset fill to default explicitly — some browsers cache the previous value
+  heroStatus.style.fill = '';
+  statusDot.style.fill = '';
+
   if (isError) {
     heroStatus.classList.add('error');
   } else if (text.toLowerCase() === 'live') {
@@ -696,7 +701,7 @@ function disconnect(closeSocket = true) {
   logoColorValue = 0;
   logoScaleValue = 0;
   logoPaths.style.transform = 'scale(1)';
-  litoLogoReacts.forEach(el => el.style.stroke = '');
+  litoLogoReacts.forEach(el => el.style.stroke = '#f0b020'');
 
   try { audioCtx?.close(); } catch (_) {}
   audioCtx = null;
