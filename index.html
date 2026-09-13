@@ -361,11 +361,11 @@
       </g>
 
       <!-- Hero text inside the gemstone -->
-      <text id="heroCode" x="132" y="195" text-anchor="middle">LITO</text>
-      <text id="heroLabel" x="132" y="222" text-anchor="middle">ROOM CODE</text>
+      <text id="heroCode" x="132" y="215" text-anchor="middle">LITO</text>
+      <text id="heroLabel" x="132" y="242" text-anchor="middle">ROOM CODE</text>
       <g id="statusRow">
-        <circle id="statusDot" cx="112" cy="245" r="4" />
-        <text id="heroStatus" x="132" y="249" text-anchor="middle">IDLE</text>
+        <circle id="statusDot" cx="112" cy="265" r="4" />
+        <text id="heroStatus" x="132" y="269" text-anchor="middle">IDLE</text>
       </g>
     </svg>
   </div>
@@ -768,6 +768,8 @@ const METER_LINE_WIDTH = 4;
 function startMeter() {
   if (meterRaf) return;
 
+  setupCanvas();
+
   const freqData = new Uint8Array(analyser.frequencyBinCount);
 
   const minFreq = 600;
@@ -1033,12 +1035,16 @@ if (presetCode) {
   setIdleUi();
 }
 
-(function setupCanvas() {
+function setupCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const rect = meterCanvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return; // not visible yet
   meterCanvas.width = rect.width * dpr;
   meterCanvas.height = rect.height * dpr;
-})();
+}
+
+setupCanvas();
+window.addEventListener('resize', setupCanvas);
 
 // ═══════════════════════════════════════════════════════════════════
 // Debug panel — live tuning
