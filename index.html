@@ -703,20 +703,26 @@ const VOCAL_MAX_HZ = 5000;
 const BASS_MIN_HZ = 40;
 const BASS_MAX_HZ = 160;
 
-// Sensitivity. Lower values = less likely to pin at max.
-const VOCAL_SENSITIVITY = 0.9;
-const BASS_SENSITIVITY = 1.2;
+// Vocal input range mapped to the color output.
+// Bass levels below VOCAL_FLOOR leave the logo amber.
+// Bass levels above VOCAL_CEILING pin the logo at full color.
+const VOCAL_FLOOR = 0.08;
+const VOCAL_CEILING = 0.55;
+
+// Bass input range mapped to the scale output.
+const BASS_FLOOR = 0.10;
+const BASS_CEILING = 0.65;
 
 // How big the scale can grow at full bass.
-const BASS_SCALE_RANGE = 0.06;
+const BASS_SCALE_RANGE = 0.12;
 
 // Colors. Quiet = amber. Loud = warm white.
 const LOGO_QUIET_COLOR = [240, 176,  32];
 const LOGO_LOUD_COLOR  = [255, 245, 220];
 
-// Decay rates. Higher = snappier response, lower = longer tail.
-const LOGO_ATTACK = 1.0;   // 1.0 = instant snap to louder values
-const LOGO_RELEASE = 0.15; // lower = slower fade back to amber
+// Decay rates. Attack = 1.0 means instant snap.
+const LOGO_ATTACK = 1.0;
+const LOGO_RELEASE = 0.15;
 
 let vocalBinRange = null;
 let bassBinRange = null;
@@ -743,15 +749,25 @@ function averageBins(freqData, lo, hi) {
 let logoColorValue = 0;
 let logoScaleValue = 0;
 
+let logoColorValue = 0;
+let logoScaleValue = 0;
+
+// Maps an input level through a floor/ceiling range, clamped to 0..1.
+function remap(level, floor, ceiling) {
+  if (level <= floor) return 0;
+  if (level >= ceiling) return 1;
+  return (level - floor) / (ceiling - floor);
+}
+
 function updateLogo(freqData) {
   if (!vocalBinRange || !bassBinRange) return;
 
   const vocalLevel = averageBins(freqData, vocalBinRange[0], vocalBinRange[1]);
   const bassLevel = averageBins(freqData, bassBinRange[0], bassBinRange[1]);
 
-  // Targets, clamped to 0..1
-  const colorTarget = Math.min(1, vocalLevel * VOCAL_SENSITIVITY);
-  const scaleTarget = Math.min(1, bassLevel * BASS_SENSITIVITY);
+  // Remap through the floor/ceiling ranges
+  const colorTarget = remap(vocalLevel, VOCAL_FLOOR, VOCAL_CEILING);
+  const scaleTarget = remap(bassLevel, BASS_FLOOR, BASS_CEILING);
 
   // Asymmetric smoothing: instant attack, gradual release.
   logoColorValue += (colorTarget - logoColorValue) *
