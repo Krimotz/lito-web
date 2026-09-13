@@ -47,15 +47,19 @@
 
   .logo-wrap {
     width: 100%;
+    height: 340px;
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
+    overflow: visible;
   }
 
   #litoLogo {
     width: 220px;
     height: 314px;
     display: block;
+    overflow: visible;
   }
 
   /* Hero text lives inside the SVG */
@@ -114,7 +118,9 @@
   canvas#meter {
     width: 100%;
     height: 60px;
+    min-height: 60px;
     display: block;
+    flex-shrink: 0;
   }
 
   /* The meter is hidden while idle; visible when connected */
@@ -474,6 +480,7 @@ const toggleBtn = document.getElementById('toggleBtn');
 const tapOverlay = document.getElementById('tapOverlay');
 const litoLogo = document.getElementById('litoLogo');
 const litoLogoReacts = litoLogo.querySelectorAll('.logo-reacts');
+const logoPaths = document.getElementById('logoPaths');
 
 // ═══════════════════════════════════════════════════════════════════
 // Room ID helpers
@@ -684,6 +691,12 @@ function disconnect(closeSocket = true) {
   ws = null;
 
   stopMeter();
+
+  // Reset the logo's reactive state so it returns to its resting size and color
+  logoColorValue = 0;
+  logoScaleValue = 0;
+  logoPaths.style.transform = 'scale(1)';
+  litoLogoReacts.forEach(el => el.style.stroke = '');
 
   try { audioCtx?.close(); } catch (_) {}
   audioCtx = null;
@@ -978,8 +991,8 @@ function updateLogo(freqData) {
   litoLogoReacts.forEach(el => el.style.stroke = `rgb(${r}, ${g}, ${b})`);
 
   const scale = 1 + logoScaleValue * settings.SCALE_RANGE;
-  litoLogo.style.transform = `scale(${scale})`;
-  litoLogo.style.transformOrigin = 'center';
+  logoPaths.style.transform = `scale(${scale})`;
+  logoPaths.style.transformOrigin = 'center';
 
   dbgVocal.textContent = vocalLevel.toFixed(3);
   dbgBass.textContent = bassLevel.toFixed(3);
