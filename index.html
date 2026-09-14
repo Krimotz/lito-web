@@ -873,17 +873,12 @@ function rebuildMeterBins() {
   const sampleBins = [];
   for (let i = 0; i < METER_POINTS; i++) {
     const frac = i / (METER_POINTS - 1);
-    const loHz = minFreq + (maxFreq - minFreq) * frac;
-    const hiFrac = (i + 1) / (METER_POINTS - 1);
-    const hiHz = minFreq + (maxFreq - minFreq) * hiFrac;
+    const hz = minFreq + (maxFreq - minFreq) * frac;
+    const bin = Math.max(0, Math.min(binCount - 1, Math.round(hz / nyquist * binCount)));
 
-    const loBin = Math.max(0, Math.floor(loHz / nyquist * binCount));
-    const hiBin = Math.min(binCount - 1, Math.floor(hiHz / nyquist * binCount));
-
-    const centerHz = Math.sqrt(loHz * hiHz);
-    const tilt = Math.pow(centerHz / minFreq, settings.METER_TILT);
-
-    sampleBins.push([loBin, Math.max(hiBin, loBin + 1), tilt]);
+    // No tilt — this meter shows raw magnitudes, so quiet frequencies
+    // stay quiet and loud ones stand out on their own.
+    sampleBins.push([bin, bin, 1.0]);
   }
 
   meterSampleBins = sampleBins;
@@ -924,16 +919,10 @@ function startMeter() {
     const bins = meterSampleBins;
 
     for (let i = 0; i < METER_POINTS; i++) {
-      const [loBin, hiBin, tilt] = bins[i];
+      const [bin, , tilt] = bins[i];
 
-      let sum = 0;
-      for (let b = loBin; b < hiBin; b++) {
-        sum += freqData[b];
-      }
-      const avg = sum / (hiBin - loBin);
-      const norm = avg / 255;
-
-      const target = Math.min(1, Math.pow(norm, 0.8) * tilt * settings.METER_GAIN);
+      const norm = freqData[bin] / 255;
+      const target = Math.min(1, norm * tilt * settings.METER_GAIN);
 
       const prev = displayValues[i];
       const factor = target > prev ? settings.METER_ATTACK : settings.METER_RELEASE;
