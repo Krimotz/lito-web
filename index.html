@@ -31,11 +31,19 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
+
   body.debug-open {
     padding-right: 320px;
     transition: padding-right 200ms ease;
   }
-    main {
+
+  @media (max-width: 700px) {
+    body.debug-open {
+      padding-right: 0;
+    }
+  }
+
+  main {
     width: 100%;
     min-height: 100vh;
     display: flex;
@@ -49,7 +57,7 @@
 
   /* ── Corner logo ─────────────────────────────────────────── */
 
-    .corner {
+  .corner {
     position: absolute;
     top: 24px;
     right: 24px;
@@ -60,6 +68,7 @@
     height: auto;
     display: block;
     overflow: visible;
+    cursor: pointer;
   }
 
   #litoLogo text {
@@ -75,7 +84,7 @@
 
   /* ── Center block ────────────────────────────────────────── */
 
-    .center {
+  .center {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -136,11 +145,6 @@
     background: var(--dim);
     display: none;
     flex-shrink: 0;
-  }
-    @media (max-width: 700px) {
-    body.debug-open {
-      padding-right: 0;
-    }
   }
 
   #heroStatus.live #statusDot {
@@ -400,7 +404,7 @@
          viewBox="0 0 265 378"
          xmlns="http://www.w3.org/2000/svg"
          style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5; overflow:visible;">
-                  <g id="logoPaths">
+      <g id="logoPaths">
         <path class="logo-reacts"
               d="M14.722,325.203l48.952,48.045l135.977,0l58.47,-45.779l1.133,-181.416l-85.892,-137.224l-79.32,-4.079l-41.813,100.51l-47.479,65.382l9.972,154.561Z"
               style="fill:none;stroke:#f0b020;stroke-width:9.5px;" />
@@ -451,6 +455,865 @@
     <div class="readout"><span>vocal level</span><span class="value" id="dbgVocal">0.000</span></div>
     <div class="readout"><span>bass level</span><span class="value" id="dbgBass">0.000</span></div>
     <div class="readout"><span>vocal mapped</span><span class="value" id="dbgVocalMapped">0.000</span></div>
+    <div class="readout"><span>bass mapped</span><span class="value" id="dbgBassMapped">0.000</span></div>
+    <div class="readout"><span>color value</span><span class="value" id="dbgColorValue">0.000</span></div>
+    <div class="readout"><span>scale value</span><span class="value" id="dbgScaleValue">0.000</span></div>
+    <div class="readout"><span>current color</span><span class="value"><span id="dbgColorSwatch" class="band-color"></span></span></div>
+  </section>
+
+  <h2>Vocal band (color)</h2>
+  <section>
+    <div class="slider-row">
+      <label><span>vocal range (Hz)</span><span class="value"><span id="lblVocalMin">300</span> – <span id="lblVocalMax">3000</span></span></label>
+      <input type="range" id="sldVocalMin" min="20" max="20000" step="10" value="300">
+      <input type="range" id="sldVocalMax" min="20" max="20000" step="10" value="3000">
+    </div>
+    <div class="slider-row">
+      <label><span>vocal floor</span><span class="value" id="lblVocalFloor">0</span></label>
+      <input type="range" id="sldVocalFloor" min="0" max="0.5" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>vocal ceiling</span><span class="value" id="lblVocalCeiling">0</span></label>
+      <input type="range" id="sldVocalCeiling" min="0" max="1" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>color release</span><span class="value" id="lblColorRelease">0</span></label>
+      <input type="range" id="sldColorRelease" min="0.01" max="0.5" step="0.01" value="0.15">
+    </div>
+  </section>
+
+  <h2>Bass band (scale)</h2>
+  <section>
+    <div class="slider-row">
+      <label><span>bass range (Hz)</span><span class="value"><span id="lblBassMin">40</span> – <span id="lblBassMax">160</span></span></label>
+      <input type="range" id="sldBassMin" min="20" max="20000" step="10" value="40">
+      <input type="range" id="sldBassMax" min="20" max="20000" step="10" value="160">
+    </div>
+    <div class="slider-row">
+      <label><span>bass floor</span><span class="value" id="lblBassFloor">0</span></label>
+      <input type="range" id="sldBassFloor" min="0" max="0.5" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>bass ceiling</span><span class="value" id="lblBassCeiling">0</span></label>
+      <input type="range" id="sldBassCeiling" min="0" max="1" step="0.005" value="0">
+    </div>
+    <div class="slider-row">
+      <label><span>scale range</span><span class="value" id="lblScaleRange">0</span></label>
+      <input type="range" id="sldScaleRange" min="0" max="0.5" step="0.01" value="0.25">
+    </div>
+    <div class="slider-row">
+      <label><span>scale release</span><span class="value" id="lblScaleRelease">0</span></label>
+      <input type="range" id="sldScaleRelease" min="0.01" max="0.5" step="0.01" value="0.15">
+    </div>
+  </section>
+
+  <h2>Equaliser</h2>
+  <section>
+    <div class="slider-row">
+      <label><span>meter range (Hz)</span><span class="value"><span id="lblMeterMin">600</span> – <span id="lblMeterMax">16000</span></span></label>
+      <input type="range" id="sldMeterMin" min="20" max="20000" step="10" value="600">
+      <input type="range" id="sldMeterMax" min="20" max="20000" step="10" value="16000">
+    </div>
+    <div class="slider-row">
+      <label><span>attack</span><span class="value" id="lblMeterAttack">0</span></label>
+      <input type="range" id="sldMeterAttack" min="0.05" max="1" step="0.01" value="0.85">
+    </div>
+    <div class="slider-row">
+      <label><span>release</span><span class="value" id="lblMeterRelease">0</span></label>
+      <input type="range" id="sldMeterRelease" min="0.05" max="1" step="0.01" value="0.25">
+    </div>
+    <div class="slider-row">
+      <label><span>gain</span><span class="value" id="lblMeterGain">0</span></label>
+      <input type="range" id="sldMeterGain" min="0.1" max="2" step="0.05" value="0.8">
+    </div>
+    <div class="slider-row">
+      <label><span>tilt</span><span class="value" id="lblMeterTilt">0</span></label>
+      <input type="range" id="sldMeterTilt" min="0" max="1" step="0.05" value="0.25">
+    </div>
+    <div class="slider-row">
+      <label><span>curviness</span><span class="value" id="lblMeterCurviness">0</span></label>
+      <input type="range" id="sldMeterCurviness" min="0" max="1" step="0.05" value="0.9">
+    </div>
+    <div class="slider-row">
+      <label><span>line width</span><span class="value" id="lblMeterLineWidth">0</span></label>
+      <input type="range" id="sldMeterLineWidth" min="1" max="10" step="0.5" value="4">
+    </div>
+  </section>
+
+  <section>
+    <button id="dbgReset">Reset to defaults</button>
+  </section>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// Configuration
+// ═══════════════════════════════════════════════════════════════════
+
+const SERVER_BASE = 'wss://lito-server.onrender.com';
+const SAMPLE_RATE = 44100;
+const CHANNELS = 2;
+const ROOM_PREFIX = 'lito';
+const AUTOCONNECT_DELAY_MS = 800;
+
+const COLD_START_MESSAGES = [
+  [0,     'connecting…'],
+  [3000,  'waking server…'],
+  [15000, 'still waking — first connect can take up to a minute'],
+  [45000, 'this is taking longer than usual, still trying…'],
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// DOM references
+// ═══════════════════════════════════════════════════════════════════
+
+const app = document.getElementById('app');
+const heroCode = document.getElementById('heroCode');
+const heroLabel = document.getElementById('heroLabel');
+const heroStatus = document.getElementById('heroStatus');
+const heroStatusText = document.getElementById('heroStatusText');
+const statusDot = document.getElementById('statusDot');
+const meterCanvas = document.getElementById('meter');
+const meterCtx = meterCanvas.getContext('2d');
+const roomInput = document.getElementById('room');
+const toggleBtn = document.getElementById('toggleBtn');
+const tapOverlay = document.getElementById('tapOverlay');
+const litoLogo = document.getElementById('litoLogo');
+const litoLogoReacts = litoLogo.querySelectorAll('.logo-reacts');
+const logoPaths = document.getElementById('logoPaths');
+
+// ═══════════════════════════════════════════════════════════════════
+// Room ID helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function normalizeRoomCode(input) {
+  if (!input) return null;
+  const cleaned = String(input)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  if (!cleaned) return null;
+  const code = cleaned.startsWith(ROOM_PREFIX)
+    ? cleaned.slice(ROOM_PREFIX.length)
+    : cleaned;
+  return code || null;
+}
+
+function fullRoomId(code) {
+  return ROOM_PREFIX + code;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════
+
+let ws = null;
+let audioCtx = null;
+let nextPlayTime = 0;
+let analyser = null;
+let analyserData = null;
+let meterRaf = null;
+let coldStartTimer = null;
+let isConnected = false;
+let logoReactive = false;
+
+// ═══════════════════════════════════════════════════════════════════
+// UI helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function setHeroCode(text) {
+  heroCode.textContent = text;
+}
+
+function setHeroLabel(text) {
+  heroLabel.textContent = text;
+}
+
+function setStatus(text, isError = false) {
+  heroStatusText.textContent = text.toUpperCase();
+  heroStatus.className = '';
+  if (isError) {
+    heroStatus.classList.add('error');
+  } else if (text.toLowerCase() === 'live') {
+    heroStatus.classList.add('live');
+  }
+}
+
+function setIdleUi() {
+  isConnected = false;
+  app.classList.add('idle');
+  app.classList.remove('connected');
+  setHeroCode('____');
+  setHeroLabel('ROOM CODE');
+  setStatus('idle');
+  toggleBtn.textContent = 'LISTEN';
+  toggleBtn.classList.remove('stop');
+  toggleBtn.disabled = false;
+  roomInput.disabled = false;
+}
+
+function setConnectedUi(code) {
+  isConnected = true;
+  app.classList.remove('idle');
+  app.classList.add('connected');
+  setHeroCode(code.toUpperCase());
+  setHeroLabel('ROOM CODE');
+  toggleBtn.textContent = 'STOP';
+  toggleBtn.classList.add('stop');
+  toggleBtn.disabled = false;
+  roomInput.disabled = true;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Cold-start messaging
+// ═══════════════════════════════════════════════════════════════════
+
+function startColdStartMessages() {
+  stopColdStartMessages();
+  const start = Date.now();
+  let index = 0;
+
+  const tick = () => {
+    const elapsed = Date.now() - start;
+    while (
+      index + 1 < COLD_START_MESSAGES.length &&
+      elapsed >= COLD_START_MESSAGES[index + 1][0]
+    ) {
+      index++;
+    }
+    setStatus(COLD_START_MESSAGES[index][1]);
+    coldStartTimer = setTimeout(tick, 500);
+  };
+
+  tick();
+}
+
+function stopColdStartMessages() {
+  if (coldStartTimer) {
+    clearTimeout(coldStartTimer);
+    coldStartTimer = null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Connection lifecycle
+// ═══════════════════════════════════════════════════════════════════
+
+function connect() {
+  const code = normalizeRoomCode(roomInput.value);
+  if (!code) {
+    setStatus('enter a room code', true);
+    return;
+  }
+
+  setHeroCode(code.toUpperCase());
+  setHeroLabel('ROOM CODE');
+  setStatus('connecting…');
+  toggleBtn.textContent = 'CANCEL';
+  toggleBtn.classList.remove('stop');
+  roomInput.disabled = true;
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0;
+  analyserData = new Uint8Array(analyser.fftSize);
+  analyser.connect(audioCtx.destination);
+
+  nextPlayTime = audioCtx.currentTime + 0.1;
+
+  ws = new WebSocket(`${SERVER_BASE}/listen/${fullRoomId(code)}`);
+  ws.binaryType = 'arraybuffer';
+
+  let confirmed = false;
+  startColdStartMessages();
+
+  ws.onopen = () => {
+    setStatus('handshaking…');
+  };
+
+  ws.onmessage = (event) => {
+    if (typeof event.data === 'string') {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'joined') {
+          confirmed = true;
+          stopColdStartMessages();
+          setConnectedUi(code);
+          setStatus('waiting…');
+          startMeter();
+          checkAutoplay();
+        } else if (msg.type === 'error') {
+          stopColdStartMessages();
+          setStatus(msg.message, true);
+          ws.close();
+        }
+      } catch (_) { /* ignore */ }
+      return;
+    }
+
+    if (event.data instanceof ArrayBuffer) {
+      if (!confirmed) {
+        confirmed = true;
+        stopColdStartMessages();
+        setConnectedUi(code);
+        startMeter();
+      }
+      setStatus('live');
+      playPcm(event.data);
+      checkAutoplay();
+    }
+  };
+
+  ws.onerror = () => {
+    stopColdStartMessages();
+    setStatus('connection error', true);
+  };
+
+  ws.onclose = (event) => {
+    stopColdStartMessages();
+    if (!confirmed) {
+      setStatus(`could not connect`, true);
+      setIdleUi();
+    } else {
+      disconnect(false);
+    }
+  };
+}
+
+function disconnect(closeSocket = true) {
+  stopColdStartMessages();
+  if (closeSocket && ws) {
+    try { ws.close(); } catch (_) {}
+  }
+  ws = null;
+
+  stopMeter();
+
+  logoColorValue = 0;
+  logoScaleValue = 0;
+  logoPaths.style.transform = 'scale(1)';
+  litoLogoReacts.forEach(el => el.style.stroke = '#f0b020');
+
+  try { audioCtx?.close(); } catch (_) {}
+  audioCtx = null;
+  analyser = null;
+  analyserData = null;
+  nextPlayTime = 0;
+
+  tapOverlay.classList.remove('visible');
+  setIdleUi();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Autoplay handling
+// ═══════════════════════════════════════════════════════════════════
+
+function checkAutoplay() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    tapOverlay.classList.add('visible');
+  } else {
+    tapOverlay.classList.remove('visible');
+  }
+}
+
+tapOverlay.addEventListener('click', () => {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  tapOverlay.classList.remove('visible');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// PCM playback
+// ═══════════════════════════════════════════════════════════════════
+
+function playPcm(arrayBuffer) {
+  if (!audioCtx || !analyser) return;
+
+  const int16 = new Int16Array(arrayBuffer);
+  const frames = Math.floor(int16.length / CHANNELS);
+  if (frames === 0) return;
+
+  const buffer = audioCtx.createBuffer(CHANNELS, frames, SAMPLE_RATE);
+  for (let ch = 0; ch < CHANNELS; ch++) {
+    const channelData = buffer.getChannelData(ch);
+    for (let i = 0; i < frames; i++) {
+      channelData[i] = int16[i * CHANNELS + ch] / 32768;
+    }
+  }
+
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(analyser);
+
+  const now = audioCtx.currentTime;
+  if (nextPlayTime < now + 0.05) {
+    nextPlayTime = now + 0.05;
+  }
+  source.start(nextPlayTime);
+  nextPlayTime += buffer.duration;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Live frequency meter — single stroked line
+// ═══════════════════════════════════════════════════════════════════
+
+const METER_POINTS = 30;
+
+let meterSampleBins = null;
+
+function rebuildMeterBins() {
+  const minFreq = settings.METER_MIN_HZ;
+  const maxFreq = settings.METER_MAX_HZ;
+  const nyquist = audioCtx.sampleRate / 2;
+  const binCount = analyser.frequencyBinCount;
+
+  const sampleBins = [];
+  for (let i = 0; i < METER_POINTS; i++) {
+    const frac = i / (METER_POINTS - 1);
+    const loHz = minFreq * Math.pow(maxFreq / minFreq, frac);
+    const hiFrac = (i + 1) / (METER_POINTS - 1);
+    const hiHz = minFreq * Math.pow(maxFreq / minFreq, hiFrac);
+
+    const loBin = Math.max(0, Math.floor(loHz / nyquist * binCount));
+    const hiBin = Math.min(binCount - 1, Math.floor(hiHz / nyquist * binCount));
+
+    const centerHz = Math.sqrt(loHz * hiHz);
+    const tilt = Math.pow(centerHz / minFreq, settings.METER_TILT);
+
+    sampleBins.push([loBin, Math.max(hiBin, loBin + 1), tilt]);
+  }
+
+  meterSampleBins = sampleBins;
+}
+
+function startMeter() {
+  if (meterRaf) return;
+
+  setupCanvas();
+
+  const freqData = new Uint8Array(analyser.frequencyBinCount);
+
+  rebuildMeterBins();
+
+  initLogoBands();
+
+  const displayValues = new Float32Array(METER_POINTS);
+
+  const draw = () => {
+    if (!analyser) return;
+
+    analyser.getByteFrequencyData(freqData);
+    updateLogo(freqData);
+
+    const w = meterCanvas.width;
+    const h = meterCanvas.height;
+    const centerY = h / 2;
+
+    meterCtx.clearRect(0, 0, w, h);
+
+    const accent = getComputedStyle(document.documentElement)
+      .getPropertyValue('--accent').trim() || '#f0b020';
+    meterCtx.strokeStyle = accent;
+    meterCtx.lineWidth = settings.METER_LINE_WIDTH;
+    meterCtx.lineJoin = 'round';
+    meterCtx.lineCap = 'round';
+
+    const bins = meterSampleBins;
+
+    for (let i = 0; i < METER_POINTS; i++) {
+      const [loBin, hiBin, tilt] = bins[i];
+
+      let sum = 0;
+      for (let b = loBin; b < hiBin; b++) {
+        sum += freqData[b];
+      }
+      const avg = sum / (hiBin - loBin);
+      const norm = avg / 255;
+
+      const target = Math.min(1, Math.pow(norm, 0.8) * tilt * settings.METER_GAIN);
+
+      const prev = displayValues[i];
+      const factor = target > prev ? settings.METER_ATTACK : settings.METER_RELEASE;
+      displayValues[i] = prev + (target - prev) * factor;
+    }
+
+    const ANCHOR = 3;
+    for (let i = 0; i < ANCHOR; i++) {
+      displayValues[i] = 0;
+      displayValues[METER_POINTS - 1 - i] = 0;
+    }
+
+    const points = [];
+    for (let i = 0; i < METER_POINTS; i++) {
+      const x = (i / (METER_POINTS - 1)) * w;
+      const flip = (i % 2 === 0) ? -1 : 1;
+      const y = centerY + flip * displayValues[i] * (centerY - 4);
+      points.push({ x, y });
+    }
+
+    meterCtx.beginPath();
+    meterCtx.moveTo(points[0].x, points[0].y);
+
+    const CURVINESS = settings.METER_CURVINESS;
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i - 1] || points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2] || p2;
+
+      const cp1x = p1.x + (p2.x - p0.x) * CURVINESS / 6;
+      const cp1y = p1.y + (p2.y - p0.y) * CURVINESS / 6;
+
+      const cp2x = p2.x - (p3.x - p1.x) * CURVINESS / 6;
+      const cp2y = p2.y - (p3.y - p1.y) * CURVINESS / 6;
+
+      meterCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+    }
+
+    meterCtx.stroke();
+  };
+
+  const loop = () => {
+    draw();
+    meterRaf = requestAnimationFrame(loop);
+  };
+
+  loop();
+}
+
+function stopMeter() {
+  if (meterRaf) {
+    cancelAnimationFrame(meterRaf);
+    meterRaf = null;
+  }
+  meterCtx.clearRect(0, 0, meterCanvas.width, meterCanvas.height);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Reactive logo — color from vocals, scale from bass
+// ═══════════════════════════════════════════════════════════════════
+
+const LOGO_DEFAULTS = {
+  VOCAL_MIN_HZ:   300,
+  VOCAL_MAX_HZ:   3000,
+  VOCAL_FLOOR:    0.335,
+  VOCAL_CEILING:  0.865,
+  COLOR_RELEASE:  0.29,
+
+  BASS_MIN_HZ:    40,
+  BASS_MAX_HZ:    160,
+  BASS_FLOOR:     0.46,
+  BASS_CEILING:   1.0,
+  SCALE_RANGE:    0.50,
+  SCALE_RELEASE:  0.27,
+
+  METER_MIN_HZ:       600,
+  METER_MAX_HZ:       16000,
+  METER_ATTACK:       0.85,
+  METER_RELEASE:      0.25,
+  METER_GAIN:         0.8,
+  METER_TILT:         0.25,
+  METER_CURVINESS:    0.9,
+  METER_LINE_WIDTH:   4,
+};
+
+const settings = Object.assign({}, LOGO_DEFAULTS);
+
+const LOGO_COLORS = [
+  [240, 176,  32],
+  [224,  85,  85],
+  [192,  96, 208],
+  [ 64, 208, 240],
+];
+
+const LOGO_ATTACK = 1.0;
+
+let vocalBinRange = null;
+let bassBinRange = null;
+let logoColorValue = 0;
+let logoScaleValue = 0;
+
+const dbgVocal = document.getElementById('dbgVocal');
+const dbgBass = document.getElementById('dbgBass');
+const dbgVocalMapped = document.getElementById('dbgVocalMapped');
+const dbgBassMapped = document.getElementById('dbgBassMapped');
+const dbgColorValue = document.getElementById('dbgColorValue');
+const dbgScaleValue = document.getElementById('dbgScaleValue');
+const dbgColorSwatch = document.getElementById('dbgColorSwatch');
+
+function hzToBin(hz) {
+  const nyquist = audioCtx.sampleRate / 2;
+  const bin = Math.floor(hz / nyquist * analyser.frequencyBinCount);
+  return Math.max(0, Math.min(analyser.frequencyBinCount - 1, bin));
+}
+
+function initLogoBands() {
+  vocalBinRange = [hzToBin(settings.VOCAL_MIN_HZ), hzToBin(settings.VOCAL_MAX_HZ)];
+  bassBinRange  = [hzToBin(settings.BASS_MIN_HZ),  hzToBin(settings.BASS_MAX_HZ)];
+}
+
+function averageBins(freqData, lo, hi) {
+  let sum = 0;
+  for (let b = lo; b <= hi; b++) {
+    sum += freqData[b];
+  }
+  return sum / (hi - lo + 1) / 255;
+}
+
+function remap(level, floor, ceiling) {
+  if (level <= floor) return 0;
+  if (level >= ceiling) return 1;
+  return (level - floor) / (ceiling - floor);
+}
+
+function colorAt(amount) {
+  const clamped = Math.max(0, Math.min(1, amount));
+  const segments = LOGO_COLORS.length - 1;
+  const scaled = clamped * segments;
+  const index = Math.min(Math.floor(scaled), segments - 1);
+  const t = scaled - index;
+
+  const a = LOGO_COLORS[index];
+  const b = LOGO_COLORS[index + 1];
+
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+function updateLogo(freqData) {
+  if (!vocalBinRange || !bassBinRange) return;
+
+  // When reactive mode is off, keep the logo at rest and skip the analysis.
+  if (!logoReactive) {
+    if (logoColorValue !== 0 || logoScaleValue !== 0) {
+      logoColorValue = 0;
+      logoScaleValue = 0;
+      logoPaths.style.transform = 'scale(1)';
+      litoLogoReacts.forEach(el => el.style.stroke = '#f0b020');
+    }
+    return;
+  }
+
+  const vocalLevel = averageBins(freqData, vocalBinRange[0], vocalBinRange[1]);
+  const bassLevel  = averageBins(freqData, bassBinRange[0],  bassBinRange[1]);
+
+  const colorTarget = remap(vocalLevel, settings.VOCAL_FLOOR, settings.VOCAL_CEILING);
+  const scaleTarget = remap(bassLevel,  settings.BASS_FLOOR,  settings.BASS_CEILING);
+
+  logoColorValue += (colorTarget - logoColorValue) *
+    (colorTarget > logoColorValue ? LOGO_ATTACK : settings.COLOR_RELEASE);
+  logoScaleValue += (scaleTarget - logoScaleValue) *
+    (scaleTarget > logoScaleValue ? LOGO_ATTACK : settings.SCALE_RELEASE);
+
+  const [r, g, b] = colorAt(logoColorValue);
+  litoLogoReacts.forEach(el => el.style.stroke = `rgb(${r}, ${g}, ${b})`);
+
+  const scale = 1 + logoScaleValue * settings.SCALE_RANGE;
+  logoPaths.style.transform = `scale(${scale})`;
+  logoPaths.style.transformOrigin = 'top right';
+
+  dbgVocal.textContent = vocalLevel.toFixed(3);
+  dbgBass.textContent = bassLevel.toFixed(3);
+  dbgVocalMapped.textContent = colorTarget.toFixed(3);
+  dbgBassMapped.textContent = scaleTarget.toFixed(3);
+  dbgColorValue.textContent = logoColorValue.toFixed(3);
+  dbgScaleValue.textContent = logoScaleValue.toFixed(3);
+  dbgColorSwatch.style.background = `rgb(${r}, ${g}, ${b})`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Logo click — toggle reactivity
+// ═══════════════════════════════════════════════════════════════════
+
+litoLogo.addEventListener('click', () => {
+  logoReactive = !logoReactive;
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Button handler — single toggle
+// ═══════════════════════════════════════════════════════════════════
+
+toggleBtn.addEventListener('click', () => {
+  const label = toggleBtn.textContent.toLowerCase();
+  if (label === 'listen' || label === 'retry') {
+    connect();
+  } else if (label === 'cancel' || label === 'stop') {
+    disconnect();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// URL pre-fill and auto-connect
+// ═══════════════════════════════════════════════════════════════════
+
+const params = new URLSearchParams(location.search);
+const presetCode = normalizeRoomCode(params.get('room'));
+
+if (presetCode) {
+  roomInput.value = presetCode;
+  setHeroCode(presetCode.toUpperCase());
+  setHeroLabel('ROOM CODE');
+  setStatus('connecting…');
+  setTimeout(() => connect(), AUTOCONNECT_DELAY_MS);
+} else {
+  setIdleUi();
+}
+
+function setupCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = meterCanvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  meterCanvas.width = rect.width * dpr;
+  meterCanvas.height = rect.height * dpr;
+}
+
+setupCanvas();
+window.addEventListener('resize', setupCanvas);
+
+// ═══════════════════════════════════════════════════════════════════
+// Debug panel — live tuning
+// ═══════════════════════════════════════════════════════════════════
+
+(function setupDebugPanel() {
+  const toggle = document.getElementById('debugToggle');
+  const panel = document.getElementById('debugPanel');
+
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('open');
+    document.body.classList.toggle('debug-open');
+  });
+
+  // ── Simple single-value sliders ────────────────────────────────
+  const simpleSliders = [
+    ['sldVocalFloor',     'lblVocalFloor',     'VOCAL_FLOOR',      v => v.toFixed(3)],
+    ['sldVocalCeiling',   'lblVocalCeiling',   'VOCAL_CEILING',    v => v.toFixed(3)],
+    ['sldColorRelease',   'lblColorRelease',   'COLOR_RELEASE',    v => v.toFixed(2)],
+    ['sldBassFloor',      'lblBassFloor',      'BASS_FLOOR',       v => v.toFixed(3)],
+    ['sldBassCeiling',    'lblBassCeiling',    'BASS_CEILING',     v => v.toFixed(3)],
+    ['sldScaleRange',     'lblScaleRange',     'SCALE_RANGE',      v => v.toFixed(2)],
+    ['sldScaleRelease',   'lblScaleRelease',   'SCALE_RELEASE',    v => v.toFixed(2)],
+    ['sldMeterAttack',    'lblMeterAttack',    'METER_ATTACK',     v => v.toFixed(2)],
+    ['sldMeterRelease',   'lblMeterRelease',   'METER_RELEASE',    v => v.toFixed(2)],
+    ['sldMeterGain',      'lblMeterGain',      'METER_GAIN',       v => v.toFixed(2)],
+    ['sldMeterTilt',      'lblMeterTilt',      'METER_TILT',       v => v.toFixed(2)],
+    ['sldMeterCurviness', 'lblMeterCurviness', 'METER_CURVINESS',  v => v.toFixed(2)],
+    ['sldMeterLineWidth', 'lblMeterLineWidth', 'METER_LINE_WIDTH', v => v.toFixed(1)],
+  ];
+
+  for (const [sliderId, labelId, key, fmt] of simpleSliders) {
+    const slider = document.getElementById(sliderId);
+    const label = document.getElementById(labelId);
+
+    slider.value = settings[key];
+    label.textContent = fmt(settings[key]);
+
+    slider.addEventListener('input', () => {
+      const value = parseFloat(slider.value);
+      settings[key] = value;
+      label.textContent = fmt(value);
+    });
+  }
+
+  // ── Paired range sliders ───────────────────────────────────────
+  const rangePairs = [
+    {
+      minSliderId: 'sldVocalMin', maxSliderId: 'sldVocalMax',
+      minLabelId:  'lblVocalMin', maxLabelId:  'lblVocalMax',
+      minKey: 'VOCAL_MIN_HZ', maxKey: 'VOCAL_MAX_HZ',
+      onApply: 'logo',
+    },
+    {
+      minSliderId: 'sldBassMin',  maxSliderId: 'sldBassMax',
+      minLabelId:  'lblBassMin',  maxLabelId:  'lblBassMax',
+      minKey: 'BASS_MIN_HZ', maxKey: 'BASS_MAX_HZ',
+      onApply: 'logo',
+    },
+    {
+      minSliderId: 'sldMeterMin', maxSliderId: 'sldMeterMax',
+      minLabelId:  'lblMeterMin', maxLabelId:  'lblMeterMax',
+      minKey: 'METER_MIN_HZ', maxKey: 'METER_MAX_HZ',
+      onApply: 'meter',
+    },
+  ];
+
+  for (const pair of rangePairs) {
+    const minSlider = document.getElementById(pair.minSliderId);
+    const maxSlider = document.getElementById(pair.maxSliderId);
+    const minLabel  = document.getElementById(pair.minLabelId);
+    const maxLabel  = document.getElementById(pair.maxLabelId);
+
+    minSlider.value = settings[pair.minKey];
+    maxSlider.value = settings[pair.maxKey];
+    minLabel.textContent = settings[pair.minKey];
+    maxLabel.textContent = settings[pair.maxKey];
+
+    const apply = (source) => {
+      let minVal = parseFloat(minSlider.value);
+      let maxVal = parseFloat(maxSlider.value);
+
+      if (source === 'min' && minVal > maxVal) {
+        maxVal = minVal;
+        maxSlider.value = maxVal;
+      } else if (source === 'max' && maxVal < minVal) {
+        minVal = maxVal;
+        minSlider.value = minVal;
+      }
+
+      settings[pair.minKey] = minVal;
+      settings[pair.maxKey] = maxVal;
+
+      minLabel.textContent = minVal;
+      maxLabel.textContent = maxVal;
+
+      if (pair.onApply === 'logo') {
+        initLogoBands();
+      } else if (pair.onApply === 'meter' && meterSampleBins) {
+        rebuildMeterBins();
+      }
+    };
+
+    minSlider.addEventListener('input', () => apply('min'));
+    maxSlider.addEventListener('input', () => apply('max'));
+  }
+
+  // ── Reset ──────────────────────────────────────────────────────
+  document.getElementById('dbgReset').addEventListener('click', () => {
+    Object.assign(settings, LOGO_DEFAULTS);
+
+    for (const [sliderId, labelId, key, fmt] of simpleSliders) {
+      const slider = document.getElementById(sliderId);
+      const label = document.getElementById(labelId);
+      slider.value = settings[key];
+      label.textContent = fmt(settings[key]);
+    }
+
+    for (const pair of rangePairs) {
+      const minSlider = document.getElementById(pair.minSliderId);
+      const maxSlider = document.getElementById(pair.maxSliderId);
+      const minLabel  = document.getElementById(pair.minLabelId);
+      const maxLabel  = document.getElementById(pair.maxLabelId);
+
+      minSlider.value = settings[pair.minKey];
+      maxSlider.value = settings[pair.maxKey];
+      minLabel.textContent = settings[pair.minKey];
+      maxLabel.textContent = settings[pair.maxKey];
+    }
+
+    initLogoBands();
+    if (meterSampleBins) rebuildMeterBins();
+  });
+})();
+</script>
+
+</body>
+</html>n></div>
     <div class="readout"><span>bass mapped</span><span class="value" id="dbgBassMapped">0.000</span></div>
     <div class="readout"><span>color value</span><span class="value" id="dbgColorValue">0.000</span></div>
     <div class="readout"><span>scale value</span><span class="value" id="dbgScaleValue">0.000</span></div>
