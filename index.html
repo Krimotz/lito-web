@@ -852,15 +852,30 @@ tapOverlay.addEventListener('click', () => {
 function playPcm(arrayBuffer) {
   if (!audioCtx || !analyser) return;
 
-  const int16 = new Int16Array(arrayBuffer);
-  const frames = Math.floor(int16.length / CHANNELS);
+  const bytes = new Uint8Array(arrayBuffer);
+  if (bytes.length < 2) return;
+
+  const tag = bytes[0];
+
+  // Tag 0x00 = stereo system audio; tag 0x01 = mono microphone.
+  const isMic = tag === 0x01;
+  const channels = isMic ? 1 : CHANNELS;
+
+  // Strip the tag byte, then interpret the rest as 16-bit PCM.
+  // We use a fresh Int16Array view on the underlying buffer with an offset
+  // to avoid copying.
+  const pcmByteLength = bytes.length - 1;
+  const alignedLength = pcmByteLength - (pcmByteLength % 2);
+  const int16 = new Int16Array(arrayBuffer, 1, alignedLength / 2);
+
+  const frames = Math.floor(int16.length / channels);
   if (frames === 0) return;
 
-  const buffer = audioCtx.createBuffer(CHANNELS, frames, SAMPLE_RATE);
-  for (let ch = 0; ch < CHANNELS; ch++) {
+  const buffer = audioCtx.createBuffer(channels, frames, SAMPLE_RATE);
+  for (let ch = 0; ch < channels; ch++) {
     const channelData = buffer.getChannelData(ch);
     for (let i = 0; i < frames; i++) {
-      channelData[i] = int16[i * CHANNELS + ch] / 32768;
+      channelData[i] = int16[i * channels + ch] / 32768;
     }
   }
 
