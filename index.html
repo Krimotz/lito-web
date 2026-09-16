@@ -138,6 +138,20 @@
     color: var(--error);
   }
 
+  #talkIndicator {
+    display: none;
+    margin-top: 12px;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    animation: pulse 1s infinite;
+  }
+
+  #talkIndicator.visible {
+    display: block;
+  }
+
   #statusDot {
     width: 8px;
     height: 8px;
@@ -423,6 +437,7 @@
     <div id="heroCode">LITO</div>
     <div id="heroLabel">ROOM CODE</div>
     <div id="heroStatus"><span id="statusDot"></span><span id="heroStatusText">IDLE</span></div>
+    <div id="talkIndicator">TALKING</div>
   </div>
 
   <div class="bottom">
@@ -573,6 +588,7 @@ const heroLabel = document.getElementById('heroLabel');
 const heroStatus = document.getElementById('heroStatus');
 const heroStatusText = document.getElementById('heroStatusText');
 const statusDot = document.getElementById('statusDot');
+const talkIndicator = document.getElementById('talkIndicator');
 const meterCanvas = document.getElementById('meter');
 const meterCtx = meterCanvas.getContext('2d');
 const roomInput = document.getElementById('room');
@@ -744,6 +760,8 @@ function connect() {
           setStatus('waiting…');
           startMeter();
           checkAutoplay();
+        } else if (msg.type === 'talk') {
+          talkIndicator.classList.toggle('visible', msg.active === true);
         } else if (msg.type === 'error') {
           stopColdStartMessages();
           setStatus(msg.message, true);
@@ -790,6 +808,8 @@ function disconnect(closeSocket = true) {
   ws = null;
 
   stopMeter();
+
+  talkIndicator.classList.remove('visible');
 
   logoColorValue = 0;
   logoScaleValue = 0;
