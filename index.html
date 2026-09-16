@@ -55,8 +55,6 @@
     position: relative;
   }
 
-  /* ── Corner logo ─────────────────────────────────────────── */
-
   .corner {
     position: absolute;
     top: 24px;
@@ -81,8 +79,6 @@
     letter-spacing: 0.02em;
     fill: var(--accent);
   }
-
-  /* ── Center block ────────────────────────────────────────── */
 
   .center {
     display: flex;
@@ -172,8 +168,6 @@
     50% { opacity: 0.3; }
   }
 
-  /* ── Bottom: meter / input + button ──────────────────────── */
-
   .bottom {
     flex-shrink: 0;
     display: flex;
@@ -257,8 +251,6 @@
     color: var(--bg);
   }
 
-  /* ── Tap overlay ─────────────────────────────────────────── */
-
   #tapOverlay {
     position: fixed;
     inset: 0;
@@ -285,8 +277,6 @@
     font-size: 20px;
     color: var(--fg);
   }
-
-  /* ── Debug panel ─────────────────────────────────────────── */
 
   #debugToggle {
     position: fixed;
@@ -628,6 +618,7 @@ let audioCtx = null;
 let nextPlayTime = 0;
 let nextBiteTime = 0;
 let liveBiteSources = [];
+let biteActive = false;
 let analyser = null;
 let analyserData = null;
 let meterRaf = null;
@@ -813,6 +804,7 @@ function disconnect(closeSocket = true) {
 
   stopAllBites();
   nextBiteTime = 0;
+  biteActive = false;
 
   talkIndicator.classList.remove('visible');
 
@@ -858,14 +850,21 @@ function playPcm(arrayBuffer) {
   if (!audioCtx || !analyser) return;
 
   const bytes = new Uint8Array(arrayBuffer);
-  if (bytes.length < 2) return;
+  if (bytes.length < 1) return;
 
   const tag = bytes[0];
 
-  // Tag 0x03 = bite reset: discard all pending and currently-playing bites,
-  // reset the bite timeline. No PCM payload.
+  // Tag 0x03 = bite reset: discard all pending and currently-playing bites.
   if (tag === 0x03) {
     stopAllBites();
+    nextBiteTime = audioCtx.currentTime + 0.02;
+    biteActive = false;
+    return;
+  }
+
+  // Tag 0x04 = bite start: mark the following 0x02 chunks as the new bite.
+  if (tag === 0x04) {
+    biteActive = true;
     nextBiteTime = audioCtx.currentTime + 0.02;
     return;
   }
@@ -902,6 +901,12 @@ function playPcm(arrayBuffer) {
   const now = audioCtx.currentTime;
 
   if (isBite) {
+    // If no "bite start" has been seen since the last reset, this is a
+    // stray chunk from a bite that has already been discarded.
+    if (!biteActive) {
+      return;
+    }
+
     // Bites use their own timeline so they can be reset independently.
     if (nextBiteTime < now + 0.02) {
       nextBiteTime = now + 0.02;
@@ -955,8 +960,6 @@ function rebuildMeterBins() {
     const hz = minFreq + (maxFreq - minFreq) * frac;
     const bin = Math.max(0, Math.min(binCount - 1, Math.round(hz / nyquist * binCount)));
 
-    // No tilt — this meter shows raw magnitudes, so quiet frequencies
-    // stay quiet and loud ones stand out on their own.
     sampleBins.push([bin, bin, 1.0]);
   }
 
@@ -1062,7 +1065,7 @@ function stopMeter() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Reactive logo — color from vocals, scale from bass
+// Reactive logo
 // ═══════════════════════════════════════════════════════════════════
 
 const LOGO_DEFAULTS = {
@@ -1158,7 +1161,6 @@ function colorAt(amount) {
 function updateLogo(freqData) {
   if (!vocalBinRange || !bassBinRange) return;
 
-  // When reactive mode is off, keep the logo at rest and skip the analysis.
   if (!logoReactive) {
     if (logoColorValue !== 0 || logoScaleValue !== 0) {
       logoColorValue = 0;
@@ -1205,7 +1207,7 @@ litoLogo.addEventListener('click', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// Button handler — single toggle
+// Button handler
 // ═══════════════════════════════════════════════════════════════════
 
 toggleBtn.addEventListener('click', () => {
@@ -1246,7 +1248,7 @@ setupCanvas();
 window.addEventListener('resize', setupCanvas);
 
 // ═══════════════════════════════════════════════════════════════════
-// Debug panel — live tuning
+// Debug panel
 // ═══════════════════════════════════════════════════════════════════
 
 (function setupDebugPanel() {
@@ -1258,7 +1260,6 @@ window.addEventListener('resize', setupCanvas);
     document.body.classList.toggle('debug-open');
   });
 
-  // ── Simple single-value sliders ────────────────────────────────
   const simpleSliders = [
     ['sldVocalFloor',     'lblVocalFloor',     'VOCAL_FLOOR',      v => v.toFixed(3)],
     ['sldVocalCeiling',   'lblVocalCeiling',   'VOCAL_CEILING',    v => v.toFixed(3)],
@@ -1289,7 +1290,6 @@ window.addEventListener('resize', setupCanvas);
     });
   }
 
-  // ── Paired range sliders ───────────────────────────────────────
   const rangePairs = [
     {
       minSliderId: 'sldVocalMin', maxSliderId: 'sldVocalMax',
@@ -1351,7 +1351,6 @@ window.addEventListener('resize', setupCanvas);
     maxSlider.addEventListener('input', () => apply('max'));
   }
 
-  // ── Reset ──────────────────────────────────────────────────────
   document.getElementById('dbgReset').addEventListener('click', () => {
     Object.assign(settings, LOGO_DEFAULTS);
 
