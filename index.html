@@ -626,6 +626,8 @@ function fullRoomId(code) {
 let ws = null;
 let audioCtx = null;
 let nextPlayTime = 0;
+let nextBiteTime = 0;
+let liveBiteSources = [];
 let analyser = null;
 let analyserData = null;
 let meterRaf = null;
@@ -809,6 +811,9 @@ function disconnect(closeSocket = true) {
 
   stopMeter();
 
+  stopAllBites();
+  nextBiteTime = 0;
+
   talkIndicator.classList.remove('visible');
 
   logoColorValue = 0;
@@ -853,16 +858,25 @@ function playPcm(arrayBuffer) {
   if (!audioCtx || !analyser) return;
 
   const bytes = new Uint8Array(arrayBuffer);
-  if (bytes.length < 3) return;
+  if (bytes.length < 2) return;
 
   const tag = bytes[0];
 
-  // Tag 0x00 = stereo system audio; tag 0x01 = mono microphone.
+  // Tag 0x03 = bite reset: discard all pending and currently-playing bites,
+  // reset the bite timeline. No PCM payload.
+  if (tag === 0x03) {
+    stopAllBites();
+    nextBiteTime = audioCtx.currentTime + 0.02;
+    return;
+  }
+
+  // Tags 0x00 (system), 0x01 (mic), 0x02 (bite) all carry PCM.
+  if (bytes.length < 3) return;
+
   const isMic = tag === 0x01;
+  const isBite = tag === 0x02;
   const channels = isMic ? 1 : CHANNELS;
 
-  // Strip the tag byte, then copy the remaining bytes into a fresh
-  // Uint8Array to guarantee 2-byte alignment before creating an Int16Array.
   const pcmByteLength = bytes.length - 1;
   const alignedLength = pcmByteLength - (pcmByteLength % 2);
   if (alignedLength < 2) return;
@@ -886,11 +900,39 @@ function playPcm(arrayBuffer) {
   source.connect(analyser);
 
   const now = audioCtx.currentTime;
-  if (nextPlayTime < now + 0.05) {
-    nextPlayTime = now + 0.05;
+
+  if (isBite) {
+    // Bites use their own timeline so they can be reset independently.
+    if (nextBiteTime < now + 0.02) {
+      nextBiteTime = now + 0.02;
+    }
+    source.start(nextBiteTime);
+    nextBiteTime += buffer.duration;
+
+    liveBiteSources.push(source);
+    source.onended = () => {
+      const idx = liveBiteSources.indexOf(source);
+      if (idx !== -1) liveBiteSources.splice(idx, 1);
+    };
+  } else {
+    // System audio and mic share the main timeline.
+    if (nextPlayTime < now + 0.05) {
+      nextPlayTime = now + 0.05;
+    }
+    source.start(nextPlayTime);
+    nextPlayTime += buffer.duration;
   }
-  source.start(nextPlayTime);
-  nextPlayTime += buffer.duration;
+}
+
+/**
+ * Stops every bite currently scheduled or playing, and clears the list.
+ * Hard cut — no fade.
+ */
+function stopAllBites() {
+  for (const source of liveBiteSources) {
+    try { source.stop(); } catch (_) { /* already stopped */ }
+  }
+  liveBiteSources = [];
 }
 
 // ═══════════════════════════════════════════════════════════════════
