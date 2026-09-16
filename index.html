@@ -853,7 +853,7 @@ function playPcm(arrayBuffer) {
   if (!audioCtx || !analyser) return;
 
   const bytes = new Uint8Array(arrayBuffer);
-  if (bytes.length < 2) return;
+  if (bytes.length < 3) return;
 
   const tag = bytes[0];
 
@@ -861,12 +861,14 @@ function playPcm(arrayBuffer) {
   const isMic = tag === 0x01;
   const channels = isMic ? 1 : CHANNELS;
 
-  // Strip the tag byte, then interpret the rest as 16-bit PCM.
-  // We use a fresh Int16Array view on the underlying buffer with an offset
-  // to avoid copying.
+  // Strip the tag byte, then copy the remaining bytes into a fresh
+  // Uint8Array to guarantee 2-byte alignment before creating an Int16Array.
   const pcmByteLength = bytes.length - 1;
   const alignedLength = pcmByteLength - (pcmByteLength % 2);
-  const int16 = new Int16Array(arrayBuffer, 1, alignedLength / 2);
+  if (alignedLength < 2) return;
+
+  const pcmBytes = bytes.slice(1, 1 + alignedLength);
+  const int16 = new Int16Array(pcmBytes.buffer);
 
   const frames = Math.floor(int16.length / channels);
   if (frames === 0) return;
