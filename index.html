@@ -709,7 +709,7 @@ function stopColdStartMessages() {
 // Connection lifecycle
 // ═══════════════════════════════════════════════════════════════════
 
-function connect() {
+async function connect() {
   const code = normalizeRoomCode(roomInput.value);
   if (!code) {
     setStatus('enter a room code', true);
@@ -724,7 +724,12 @@ function connect() {
   roomInput.disabled = true;
 
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    initOpusDecoder().catch(err => console.error("Opus init failed:", err));
+
+  try {
+    await initOpusDecoder();
+  } catch (err) {
+    console.error("Opus init failed:", err);
+  }
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 8192;
@@ -845,10 +850,6 @@ tapOverlay.addEventListener('click', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// PCM playback
-// ═══════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════
 // Opus decoder (WASM)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -899,38 +900,10 @@ function playDecodedPcm(float32Data, sampleRate) {
   nextPlayTime += buffer.duration;
 }
 
-function playPcm(arrayBuffer) {
-  if (!audioCtx || !analyser) return;
+// ═══════════════════════════════════════════════════════════════════
+// PCM playback
+// ═══════════════════════════════════════════════════════════════════
 
-  const bytes = new Uint8Array(arrayBuffer);
-  if (bytes.length < 1) return;
-
-  const tag = bytes[0];
-
-  // Tag 0x03 = bite reset: discard all pending and currently-playing bites.
-  if (tag === 0x03) {
-    stopAllBites();
-    nextBiteTime = audioCtx.currentTime + 0.02;
-    biteActive = false;
-    return;
-  }
-
-  // Tag 0x04 = bite start: mark the following 0x02 chunks as the new bite.
-  if (tag === 0x04) {
-    biteActive = true;
-    nextBiteTime = audioCtx.currentTime + 0.02;
-    return;
-  }
-
-  // Tag 0x05 = Opus audio packet (system audio, mono, 48 kHz).
-  if (tag === 0x05) {
-    processOpusPacket(bytes.slice(1));
-    return;
-  }
-
-  // Tags 0x00 (system), 0x01 (mic), 0x02 (bite) all carry raw PCM.
-  if (bytes.length < 3) return;
-  // ... rest of the function unchanged
 function playPcm(arrayBuffer) {
   if (!audioCtx || !analyser) return;
 
