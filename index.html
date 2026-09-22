@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LiTo — Listen Together</title>
+<script src="https://cdn.jsdelivr.net/npm/opus-decoder@0.7.10/dist/opus-decoder.min.js" charset="UTF-8"></script>
 <style>
   :root {
     color-scheme: dark;
@@ -723,6 +724,7 @@ function connect() {
   roomInput.disabled = true;
 
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    initOpusDecoder().catch(err => console.error("Opus init failed:", err));
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 8192;
@@ -846,6 +848,57 @@ tapOverlay.addEventListener('click', () => {
 // PCM playback
 // ═══════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════
+// Opus decoder (WASM)
+// ═══════════════════════════════════════════════════════════════════
+
+let opusDecoder = null;
+let opusDecoderReady = false;
+
+async function initOpusDecoder() {
+  if (opusDecoderReady) return;
+  const OpusDecoderClass = window["opus-decoder"].OpusDecoder;
+  opusDecoder = new OpusDecoderClass();
+  await opusDecoder.ready;
+  opusDecoderReady = true;
+  console.log("Opus decoder ready");
+}
+
+function processOpusPacket(opusBytes) {
+  if (!opusDecoderReady || !opusDecoder) return;
+
+  try {
+    const { channelData, samplesDecoded, sampleRate } = opusDecoder.decodeFrame(opusBytes);
+
+    if (samplesDecoded > 0 && channelData.length > 0) {
+      playDecodedPcm(channelData[0], sampleRate);
+    }
+  } catch (e) {
+    console.error("Opus decode error:", e);
+  }
+}
+
+function playDecodedPcm(float32Data, sampleRate) {
+  if (!audioCtx || !analyser) return;
+
+  const frames = float32Data.length;
+  if (frames === 0) return;
+
+  const buffer = audioCtx.createBuffer(1, frames, sampleRate);
+  buffer.copyToChannel(float32Data, 0);
+
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(analyser);
+
+  const now = audioCtx.currentTime;
+  if (nextPlayTime < now + 0.05) {
+    nextPlayTime = now + 0.05;
+  }
+  source.start(nextPlayTime);
+  nextPlayTime += buffer.duration;
+}
+
 function playPcm(arrayBuffer) {
   if (!audioCtx || !analyser) return;
 
@@ -869,7 +922,45 @@ function playPcm(arrayBuffer) {
     return;
   }
 
-  // Tags 0x00 (system), 0x01 (mic), 0x02 (bite) all carry PCM.
+  // Tag 0x05 = Opus audio packet (system audio, mono, 48 kHz).
+  if (tag === 0x05) {
+    processOpusPacket(bytes.slice(1));
+    return;
+  }
+
+  // Tags 0x00 (system), 0x01 (mic), 0x02 (bite) all carry raw PCM.
+  if (bytes.length < 3) return;
+  // ... rest of the function unchanged
+function playPcm(arrayBuffer) {
+  if (!audioCtx || !analyser) return;
+
+  const bytes = new Uint8Array(arrayBuffer);
+  if (bytes.length < 1) return;
+
+  const tag = bytes[0];
+
+  // Tag 0x03 = bite reset: discard all pending and currently-playing bites.
+  if (tag === 0x03) {
+    stopAllBites();
+    nextBiteTime = audioCtx.currentTime + 0.02;
+    biteActive = false;
+    return;
+  }
+
+  // Tag 0x04 = bite start: mark the following 0x02 chunks as the new bite.
+  if (tag === 0x04) {
+    biteActive = true;
+    nextBiteTime = audioCtx.currentTime + 0.02;
+    return;
+  }
+
+  // Tag 0x05 = Opus audio packet (system audio, mono, 48 kHz).
+  if (tag === 0x05) {
+    processOpusPacket(bytes.slice(1));
+    return;
+  }
+
+  // Tags 0x00 (system), 0x01 (mic), 0x02 (bite) all carry raw PCM.
   if (bytes.length < 3) return;
 
   const isMic = tag === 0x01;
