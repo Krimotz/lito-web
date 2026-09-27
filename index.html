@@ -865,21 +865,21 @@ async function initOpusDecoder() {
   console.log("Opus decoder ready");
 }
 
-function processOpusPacket(opusBytes) {
+function processOpusPacket(opusBytes, timeline) {
   if (!opusDecoderReady || !opusDecoder) return;
 
   try {
     const { channelData, samplesDecoded, sampleRate } = opusDecoder.decodeFrame(opusBytes);
 
     if (samplesDecoded > 0 && channelData.length > 0) {
-      playDecodedPcm(channelData[0], sampleRate);
+      playDecodedPcm(channelData[0], sampleRate, timeline);
     }
   } catch (e) {
     console.error("Opus decode error:", e);
   }
 }
 
-function playDecodedPcm(float32Data, sampleRate) {
+function playDecodedPcm(float32Data, sampleRate, timeline) {
   if (!audioCtx || !analyser) return;
 
   const frames = float32Data.length;
@@ -893,11 +893,26 @@ function playDecodedPcm(float32Data, sampleRate) {
   source.connect(analyser);
 
   const now = audioCtx.currentTime;
-  if (nextPlayTime < now + 0.05) {
-    nextPlayTime = now + 0.05;
+
+  if (timeline === 'bite') {
+    if (nextBiteTime < now + 0.02) {
+      nextBiteTime = now + 0.02;
+    }
+    source.start(nextBiteTime);
+    nextBiteTime += buffer.duration;
+
+    liveBiteSources.push(source);
+    source.onended = () => {
+      const idx = liveBiteSources.indexOf(source);
+      if (idx !== -1) liveBiteSources.splice(idx, 1);
+    };
+  } else {
+    if (nextPlayTime < now + 0.05) {
+      nextPlayTime = now + 0.05;
+    }
+    source.start(nextPlayTime);
+    nextPlayTime += buffer.duration;
   }
-  source.start(nextPlayTime);
-  nextPlayTime += buffer.duration;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -920,77 +935,33 @@ function playPcm(arrayBuffer) {
     return;
   }
 
-  // Tag 0x04 = bite start: mark the following 0x02 chunks as the new bite.
+  // Tag 0x04 = bite start: mark the following 0x02 packets as the new bite.
   if (tag === 0x04) {
     biteActive = true;
     nextBiteTime = audioCtx.currentTime + 0.02;
     return;
   }
 
-  // Tag 0x05 = Opus audio packet (system audio, mono, 48 kHz).
+  // Tag 0x05 = Opus system audio.
   if (tag === 0x05) {
-    processOpusPacket(bytes.slice(1));
+    processOpusPacket(bytes.slice(1), 'main');
     return;
   }
 
-  // Tags 0x00 (system), 0x01 (mic), 0x02 (bite) all carry raw PCM.
-  if (bytes.length < 3) return;
-
-  const isMic = tag === 0x01;
-  const isBite = tag === 0x02;
-  const channels = isMic ? 1 : CHANNELS;
-
-  const pcmByteLength = bytes.length - 1;
-  const alignedLength = pcmByteLength - (pcmByteLength % 2);
-  if (alignedLength < 2) return;
-
-  const pcmBytes = bytes.slice(1, 1 + alignedLength);
-  const int16 = new Int16Array(pcmBytes.buffer);
-
-  const frames = Math.floor(int16.length / channels);
-  if (frames === 0) return;
-
-  const buffer = audioCtx.createBuffer(channels, frames, SAMPLE_RATE);
-  for (let ch = 0; ch < channels; ch++) {
-    const channelData = buffer.getChannelData(ch);
-    for (let i = 0; i < frames; i++) {
-      channelData[i] = int16[i * channels + ch] / 32768;
-    }
+  // Tag 0x01 = Opus microphone audio.
+  if (tag === 0x01) {
+    processOpusPacket(bytes.slice(1), 'main');
+    return;
   }
 
-  const source = audioCtx.createBufferSource();
-  source.buffer = buffer;
-  source.connect(analyser);
-
-  const now = audioCtx.currentTime;
-
-  if (isBite) {
-    // If no "bite start" has been seen since the last reset, this is a
-    // stray chunk from a bite that has already been discarded.
-    if (!biteActive) {
-      return;
-    }
-
-    // Bites use their own timeline so they can be reset independently.
-    if (nextBiteTime < now + 0.02) {
-      nextBiteTime = now + 0.02;
-    }
-    source.start(nextBiteTime);
-    nextBiteTime += buffer.duration;
-
-    liveBiteSources.push(source);
-    source.onended = () => {
-      const idx = liveBiteSources.indexOf(source);
-      if (idx !== -1) liveBiteSources.splice(idx, 1);
-    };
-  } else {
-    // System audio and mic share the main timeline.
-    if (nextPlayTime < now + 0.05) {
-      nextPlayTime = now + 0.05;
-    }
-    source.start(nextPlayTime);
-    nextPlayTime += buffer.duration;
+  // Tag 0x02 = Opus bite audio. Ignore if the bite has already been reset.
+  if (tag === 0x02) {
+    if (!biteActive) return;
+    processOpusPacket(bytes.slice(1), 'bite');
+    return;
   }
+
+  // Unknown tag — ignore.
 }
 
 /**
